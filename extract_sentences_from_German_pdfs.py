@@ -476,7 +476,7 @@ def extract_pages_text(pdf_path: Path) -> Iterable[Tuple[int, str]]:
 
 # --- Paragraph extraction helpers ---
 
-_SECTION_START_RE = re.compile(r"^\s*(?:§{1,2}\s*\d+[A-Za-z]?|Art\.?\s*\d+[A-Za-z]?|Artikel\s+\d+)", re.IGNORECASE)
+_SECTION_START_RE = re.compile(r"""^(\d+(?:\.\d+)*|Appendix\s+[A-Z]|Annex\s+[A-Z])""", re.IGNORECASE | re.VERBOSE,)
 _LIST_ITEM_RE = re.compile(r"^\s*(?:\(\d{1,3}\)|\d{1,3}\)|[A-Za-z]\)|[•\u2022])\s+")
 _STRONG_SENT_END_RE = re.compile(r"[\.!?]\s*$")
 
@@ -553,6 +553,7 @@ def _join_lines_into_paragraphs(
     line_h = _percentile(heights, 0.50) or 10.0
     gap_threshold = max(0.90 * line_h, 9.0)
 
+    current_heading = None
     paras: List[str] = []
     cur: List[str] = []
 
@@ -565,6 +566,8 @@ def _join_lines_into_paragraphs(
         if not cur:
             return
         txt = "".join(cur).strip()
+        if current_heading is not None:
+            txt = current_heading + "\n\n" + txt
         txt = _normalize_paragraph_text(txt)
         if txt:
             paras.append(txt)
@@ -576,8 +579,16 @@ def _join_lines_into_paragraphs(
         lt = txt.replace("\u00ad", "").strip()
         if not lt:
             continue
+        # Bottom Page Numbers are cut off
+        if y1 > page_height * 0.95:
+            if re.fullmatch(r"\d+", lt):
+                continue
+            if re.fullmatch(r"\d+\s*/\s*\d+", lt):
+                continue
 
         is_section_start = bool(_SECTION_START_RE.match(lt))
+        if is_section_start:
+            current_heading = lt
         is_list_item = bool(_LIST_ITEM_RE.match(lt))
         is_indented = (x0 - base_x0) >= indent_threshold
 
