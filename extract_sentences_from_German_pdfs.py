@@ -117,7 +117,9 @@ _CONTINUATION_START_RE = re.compile(
 _WORD_RE = re.compile(r"[A-Za-zÄÖÜäöüß]+", flags=re.UNICODE)
 _DIGIT_RE = re.compile(r"\d")
 _TOKEN_RE = re.compile(r"\w+", flags=re.UNICODE)
-
+ARTICLE_RE = re.compile(
+    r"^(\d+(?:\.\d+)*\s+.+)$"
+)
 
 def _strip_noise_prefixes(line: str) -> str:
     for rx in _NOISE_PREFIX_STRIP_REGEXES:
@@ -332,22 +334,22 @@ def _chunk_items_to_passages(
     min_tokens: int = 40,
     max_tokens: int = 420,
     split_enumerations: bool = True,
-) -> List[Tuple[int, str]]:
+) -> List[Tuple[int, str, str]]:
     """
-    Chunk (page, paragraph) items into embedding-friendly passages with overlap.
+    Chunk (page, article, paragraph) items into embedding-friendly passages with overlap.
     The returned page number is the *start page* of the first non-overlap paragraph in the chunk.
     """
     if not items:
         return []
 
     # Expand overlong paragraphs before chunking (keeps their page).
-    expanded_items: List[Tuple[int, str]] = []
-    for pg, p in items:
+    expanded_items: List[Tuple[int, str, str]] = []
+    for pg, article, p in items:
         if _count_tokens(p) > max_tokens and split_enumerations:
             parts = _split_on_list_markers(p)
-            expanded_items.extend([(pg, x.strip()) for x in parts if x and x.strip()])
+            expanded_items.extend([(pg, article, x.strip()) for x in parts if x and x.strip()])
         else:
-            expanded_items.append((pg, p))
+            expanded_items.append((pg, article, p))
 
     passages: List[Tuple[int, str]] = []
 
@@ -356,8 +358,9 @@ def _chunk_items_to_passages(
     cur_start_page: Optional[int] = None
     has_real = False  # at least one non-overlap paragraph
     pending_overlap_prefix: Optional[str] = None
+    cur_article = []
 
-    def finalize_current() -> Optional[Tuple[int, str]]:
+    def finalize_current() -> Optional[Tuple[int, str, str]]:
         nonlocal cur_parts, cur_tokens, cur_start_page, has_real, pending_overlap_prefix
         if not cur_parts or not has_real or cur_start_page is None:
             cur_parts, cur_tokens, cur_start_page, has_real = [], 0, None, False
@@ -370,7 +373,7 @@ def _chunk_items_to_passages(
         if _count_tokens(txt) > max_tokens:
             w = _TOKEN_RE.findall(txt)[:max_tokens]
             txt = " ".join(w)
-        return (start_page, txt)
+        return (start_page, article, txt)
 
     def compute_overlap_prefix(prev_txt: str) -> str:
         if overlap_tokens <= 0:
@@ -379,7 +382,7 @@ def _chunk_items_to_passages(
         ov = words[-overlap_tokens:] if len(words) > overlap_tokens else words
         return " ".join(ov)
 
-    for pg, para in expanded_items:
+    for pg, article, para in expanded_items:
         para = para.strip()
         if not para:
             continue
@@ -409,7 +412,7 @@ def _chunk_items_to_passages(
     if finished:
         passages.append(finished)
 
-    return [(pg, txt) for (pg, txt) in passages if _count_tokens(txt) >= min_tokens]
+    return [(pg, article, txt) for (pg, article, txt) in passages if _count_tokens(txt) >= min_tokens]
 
 
 # ----------------------------- PDF extraction (layout-aware) -----------------------------
@@ -670,7 +673,7 @@ def extract_paragraph_items(
     merge_across_pages: bool = True,
     header_footer_scan_ratio: float = 0.10,
     header_footer_min_page_ratio: float = 0.20,
-) -> List[Tuple[int, str]]:
+) -> List[Tuple[int, str, str]]:
     """
     Extract robust layout paragraphs from a RIS PDF.
 
@@ -688,6 +691,7 @@ def extract_paragraph_items(
     pymupdf_mod = _load_pymupdf_module()
     Document = cast(Optional[Any], getattr(pymupdf_mod, "Document", None))
     open_fn = cast(Optional[Any], getattr(pymupdf_mod, "open", None))
+    current_article = ""
 
     if callable(Document):
         doc = Document(str(pdf_path))
@@ -728,7 +732,7 @@ def extract_paragraph_items(
         hf_blacklist = {k for (k, c) in counts.items() if c >= min_count and 2 <= len(k) <= 120}
 
         # Pass 2: extract paragraphs per page and optionally merge across pages.
-        out_items: List[Tuple[int, str]] = []
+        out_items: List[Tuple[int, str, str]] = []
         prev_pg: Optional[int] = None
         prev_txt: Optional[str] = None
 
@@ -783,10 +787,13 @@ def extract_paragraph_items(
                         out_items[-1] = (prev_pg, merged)
                         prev_txt = merged
                         continue
-
-                out_items.append((page_no, ptxt))
+                match = ARTICLE_RE.match(ptxt)
+                if match:
+                    current_article = match.group(1)
+                out_items.append((page_no, current_article, ptxt))
                 prev_pg, prev_txt = page_no, ptxt
 
+        print(out_items[:5])
         return out_items
     finally:
         close_method = getattr(doc, "close", None)
@@ -872,7 +879,7 @@ def ris_pdfs_to_parquet(
 
                     sentence_id += 1
                     rows.append(
-                        {"sentence_id": sentence_id, "law_type": law_type, "page": page_no, "sentence": u, "source_file": pdf_path.name}
+                        {"sentence_id": sentence_id, "law_type": law_type, "page": page_no, "article": article, "sentence": u, "source_file": pdf_path.name}
                     )
 
         else:
@@ -882,15 +889,16 @@ def ris_pdfs_to_parquet(
                 drop_patterns=drop_patterns,
                 merge_across_pages=merge_across_pages,
             )
-
+            print(paragraph_items[:5])
             if split_enumerations and paragraph_items:
-                expanded_items: List[Tuple[int, str]] = []
-                for pg, ptxt in paragraph_items:
+                expanded_items: List[Tuple[int, str, str]] = []
+
+                for pg, article, ptxt in paragraph_items:
                     parts = _split_on_list_markers(ptxt)
-                    expanded_items.extend([(pg, x.strip()) for x in parts if x and x.strip()])
+                    expanded_items.extend([(pg, article, x.strip()) for x in parts if x and x.strip()])
                 paragraph_items = expanded_items
 
-            units_items: List[Tuple[int, str]] = (
+            units_items: List[Tuple[int, str, str]] = (
                 paragraph_items if unit == "paragraph"
                 else _chunk_items_to_passages(
                     paragraph_items,
@@ -902,7 +910,7 @@ def ris_pdfs_to_parquet(
                 )
             )
 
-            for page_no, u in units_items:
+            for page_no, article, u in units_items:
                 u = u.strip()
                 if not u:
                     continue
@@ -923,7 +931,7 @@ def ris_pdfs_to_parquet(
 
                 sentence_id += 1
                 rows.append(
-                    {"sentence_id": sentence_id, "law_type": law_type, "page": page_no, "sentence": u, "source_file": pdf_path.name}
+                    {"sentence_id": sentence_id, "law_type": law_type, "page": page_no, "article": article, "sentence": u, "source_file": pdf_path.name}
                 )
 
     if print_example_per_pdf:
@@ -936,7 +944,7 @@ def ris_pdfs_to_parquet(
             else:
                 print(f"  - {pdf_path.name}: (no units retained)")
 
-    df = pd.DataFrame(rows, columns=["sentence_id", "law_type", "page", "sentence", "source_file"])
+    df = pd.DataFrame(rows, columns=["sentence_id", "law_type", "page", "article", "sentence", "source_file"])
 
     try:
         df.to_parquet(output_parquet, index=False)
