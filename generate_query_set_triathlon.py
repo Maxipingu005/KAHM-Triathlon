@@ -52,6 +52,42 @@ LAWS: List[str] =[
     "ITUDisciplinaryRules",
 ]
 
+LAW_TERMS = {
+    "CompetitionRules":[
+        "drafting",
+        "transition",
+        "helmet",
+        "wetsuit",
+        "penalty",
+        "blocking",
+        "littering",
+    ],
+    "AntiDopingRules":[
+        "TUE",
+        "whereabouts",
+        "sample collection",
+        "prohibited substance",
+        "testing",
+    ],
+    "ParaTriathlonRules":[
+        "classification",
+        "guide",
+        "prosthesis",
+        "handcycle",
+    ],
+    "TransgenderRules":[
+        "eligibility",
+        "medical documentation",
+        "review",
+    ],
+    "ITUDisciplinaryRules":[
+        "appeal",
+        "sanction",
+        "hearing",
+        "disciplinary panel",
+    ]
+}
+
 RACES = [
     "World Triathlon Championship Series",
     "World Cup",
@@ -106,6 +142,75 @@ TIMES = [
     "during the bike segment",
     "after finishing",
 ]
+
+STOPWORDS = {
+    "the", "a", "an",
+    "and", "or", "of", "to", "for", "from",
+    "in", "on", "at", "by", "with", "without",
+    "during", "before", "after", "between",
+    "is", "are", "was", "were", "be", "been",
+    "i", "me", "my", "mine",
+    "we", "our", "ours",
+    "you", "your",
+    "he", "she", "they", "their",
+    "what", "which", "when", "where", "why", "how",
+    "can", "may", "must", "should", "could", "would",
+
+    # very generic domain words
+    "world",
+    "triathlon",
+    "rule",
+    "rules",
+    "competition",
+    "athlete",
+}
+
+FACETS_COMMON = [
+    "Eligibility",
+    "Requirements",
+    "Procedure",
+    "Equipment",
+    "Safety",
+    "Penalties",
+    "Exceptions",
+    "Responsibilities",
+    "Officials",
+    "Documentation",
+    "Appeals",
+    "Inspections",
+    "Time limits",
+    "Classification",
+    "Medical requirements",
+    "Protests",
+    "Disqualification",
+    "Sanctions",
+]
+
+QUESTION_FORMS = [
+    "Which rules apply?",
+    "What requirements must be met?",
+    "What is the correct procedure?",
+    "What penalties could apply?",
+    "Are there any exceptions?",
+    "What documentation is required?",
+    "Who is responsible for making this decision?",
+    "What should I do in this situation?",
+    "How can I appeal this decision?",
+    "What evidence is required?",
+]
+# TODO: Integrate
+QUESTION_OPENERS = [
+    "Can I",
+    "May I",
+    "Am I allowed to",
+    "Is it permitted to",
+    "Under what conditions can I",
+    "When is it allowed to",
+    "What happens if I",
+    "Do I have to",
+    "Must I",
+]
+
 # Extra Regular Expressions
 _WORD_RE = re.compile(r"[A-Za-zÄÖÜäöüß0-9]+", re.UNICODE)
 _PLACEHOLDER_RE = re.compile(r"{([a-zA-Z_][a-zA-Z0-9_]*)}")
@@ -483,86 +588,47 @@ def base_triathlon_specs():
 # by adding your issues that can occur in the races.
 # Extend the previous word Lists for more synonym matching.
 STYLES = ["nl_short", "nl_long", "scenario", "procedural", "authority", "keyword", "fragment"]
+#TODO: Add question and keywords
 STYLE_TEMPLATES: Dict[str, List[str]] ={
-
 "nl_short":[
-
     "What are the rules for {issue}?",
-
     "Is {issue} allowed?",
-
     "What penalty applies for {issue}?",
-
     "What requirements apply to {issue}?",
-
     "Are there exceptions for {issue}?",
-
 ],
-
 "nl_long":[
-
     "{scenario} Which World Triathlon rules apply and what should I do?",
-
     "{scenario} What are the applicable rules and possible penalties?",
-
     "{scenario} What evidence or documentation is required?",
-
     "{scenario} What is the correct procedure according to the Competition Rules?",
-
 ],
-
 "scenario":[
-
     "Scenario: {scenario} What is the correct ruling?",
-
     "Case: {scenario} Which rule applies?",
-
     "{scenario} Please explain the relevant competition rule.",
-
 ],
-
 "procedural":[
-
     "What is the official procedure for {issue}?",
-
     "How is {issue} handled during competition?",
-
     "Which steps must an athlete follow for {issue}?",
-
     "How can an athlete appeal a decision regarding {issue}?",
-
 ],
-
 "authority":[
-
     "Who decides on {issue}: the Head Referee or the Competition Jury?",
-
     "Which official is responsible for {issue}?",
-
     "Who has authority to rule on {issue}?",
-
 ],
-
 "keyword":[
-
     "{issue}",
-
     "{issue} penalty",
-
     "{issue} rule",
-
     "{issue} World Triathlon",
-
 ],
-
 "fragment":[
-
     "{issue}",
-
     "{issue} during race",
-
     "{issue} procedure",
-
     "{issue} appeal",
 
 ]
@@ -626,6 +692,57 @@ def estimate_max_issues(spec: LawSpec) -> int:
     return total
 def normalize_ws(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
+def extract_keywords(source: str, max_tokens: int = 10) -> str:
+    toks: List[str] = []
+    for t in _WORD_RE.findall(source.replace("-", " ").replace("-", " ")):
+        tl = t.lower().strip(".,;:!?()[]{}\"'“”„")
+        if not tl or tl in STOPWORDS:
+            continue
+        if tl.isdigit() or len(tl) > 2:
+            toks.append(tl)
+    return " ".join(toks[:max_tokens]) if toks else source[:50].lower()
+def maybe_apply_surface_noise(text: str, rng: random.Random, p: float) -> str:
+    """Moderate surface noise to improve robustness while keeping TF-IDF/SVD usable.
+
+    Note: keep p small; noise is applied *after* optional hint injection.
+    """
+    if rng.random() >= p:
+        return text
+
+    def typo_once(s: str) -> str:
+        # Single lightweight typo in a non-trivial token.
+        toks = s.split()
+        cand_idx = [i for i,t in enumerate(toks) if len(t) >= 6 and t.isalpha()]
+        if not cand_idx:
+            return s
+        i = rng.choice(cand_idx)
+        w = toks[i]
+        j = rng.randrange(1, len(w)-1)
+        op = rng.choice(["del", "dup", "swap"])
+        if op == "del":
+            w2 = w[:j] + w[j+1:]
+        elif op == "dup":
+            w2 = w[:j] + w[j] + w[j:]
+        else:
+            w2 = w[:j-1] + w[j] + w[j-1] + w[j+1:]
+        toks[i] = w2
+        return " ".join(toks)
+
+    variants = [
+        text.replace("Österreich", "AT"),
+        text.replace("E-Mail", "Email"),
+        text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss"),
+        text.rstrip("?") if text.endswith("?") else text + "?",
+        text.lower() if rng.random() < 0.7 else text,
+        typo_once(text) if rng.random() < 0.5 else text,
+    ]
+    v = rng.choice(variants)
+    return normalize_ws(v)
+def write_jsonl(path: Path, rows: List[Dict[str, str]]) -> None:
+    with path.open("w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
 
 # Function for building a szenario.
 def build_scenario(issue, ctx, rng):
@@ -634,7 +751,7 @@ def build_scenario(issue, ctx, rng):
 
         (
         f"I am an {ctx['athlete']} competing in a {ctx['race']} in {ctx['location']}. "
-        f"{ctx['time']} a situation involving {ctx['issue']} occurred. "
+        f"{ctx['time']} a situation involving {issue} occurred. "
         f"{ctx['evidence']}"
         ),
 
@@ -661,7 +778,6 @@ def build_scenario(issue, ctx, rng):
     template = re.sub(r"\s+", " ", template).strip()
 
     return template
-
 def topic_context(topic_id: str, law: str, seed: int) -> Dict[str, str]:
     rng = random.Random((seed + stable_int(f"{topic_id}:{law}:ctx")) & 0xFFFFFFFF)
 
@@ -673,7 +789,6 @@ def topic_context(topic_id: str, law: str, seed: int) -> Dict[str, str]:
         "evidence": rng.choice(EVIDENCE),
         "time": rng.choice(TIMES),
         }
-
 def generate_queries_for_topic(
     *,
     topic_id: str,
@@ -681,16 +796,11 @@ def generate_queries_for_topic(
     law: str,
     seed: int,
     variants_per_style: int,
-    law_mention_prob: float,
-    keyword_law_mention_prob: float,
     surface_noise_prob: float,
-    law_context_prob: float,
     topic_term_prob: float,
-    issue_term_prob: float,
-    keyword_term_prob: float,
 ) -> List[Dict[str, str]]:
     # Context is partly law-conditioned to reduce unrealistic boilerplate.
-    ctx = topic_context(topic_id, law, seed, law_context_prob)
+    ctx = topic_context(topic_id, law, seed)
 
     base_rng = random.Random((seed + stable_int(f"{topic_id}:{law}:base")) & 0xFFFFFFFF)
 
@@ -700,18 +810,14 @@ def generate_queries_for_topic(
     if term_pool and base_rng.random() < topic_term_prob:
         topic_term = base_rng.choice(term_pool)
 
-    scenario = build_scenario(issue, ctx, base_rng, term=topic_term)
+    scenario = build_scenario(issue, ctx, base_rng)
     question = base_rng.choice(QUESTION_FORMS)
 
     # Keyword source intentionally excludes the law token. Term inclusion is optional.
-    k_source = f"{issue} {ctx['city']} {ctx['amount_kw']} {ctx['channel']} {ctx['evidence']} {ctx['time']} {ctx['authority']}"
-    if topic_term and base_rng.random() < keyword_term_prob:
-        k_source = f"{k_source} {topic_term}"
+    k_source = f"{issue} {ctx['athlete']} {ctx['race']} {ctx['location']} {ctx['evidence']} {ctx['time']} {ctx['official']}"
     keywords = extract_keywords(k_source, max_tokens=11)
 
     def enrich_issue(rng: random.Random) -> str:
-        if not term_pool or rng.random() >= issue_term_prob:
-            return issue
         t = topic_term if (topic_term and rng.random() < 0.65) else rng.choice(term_pool)
         return rng.choice([f"{issue} ({t})", f"{issue} - {t}", f"{t}: {issue}"])
 
@@ -722,24 +828,20 @@ def generate_queries_for_topic(
             rng = random.Random(sseed)
 
             template = rng.choice(STYLE_TEMPLATES[style])
+            #TODO
             text = template.format(
                 issue=enrich_issue(rng),
                 scenario=scenario,
                 question=question,
                 keywords=keywords,
-                authority=ctx["authority"],
-                city=ctx["city"],
-                time=ctx["time"],
-                amount_kw=ctx["amount_kw"],
-                channel=ctx["channel"],
+                athlete=ctx["athlete"],
+                race=ctx["race"],
+                location=ctx["location"],
+                official=ctx["official"],
                 evidence=ctx["evidence"],
+                time=ctx["time"],
             )
             text = normalize_ws(text)
-
-            # Optional law hint (kept low)
-            p = keyword_law_mention_prob if style == "keyword" else law_mention_prob
-            if rng.random() < p:
-                text = inject_law_hint(text, law, rng)
 
             text = maybe_apply_surface_noise(text, rng, surface_noise_prob)
 
@@ -754,7 +856,6 @@ def generate_queries_for_topic(
                 }
             )
     return out
-
 def generate_issues_for_law(law: str, spec: LawSpec, *, min_count: int, seed: int) -> List[str]:
     """Deterministically generate >= min_count distinct issue strings, or raise if impossible."""
     rng = random.Random((seed + stable_int(f"{law}:issues")) & 0xFFFFFFFF)
@@ -809,7 +910,6 @@ def generate_issues_for_law(law: str, spec: LawSpec, *, min_count: int, seed: in
 
     rng.shuffle(issues)
     return issues[:]
-
 def expand_spec_with_facets(law: str, base: LawSpec, *, seed: int) -> LawSpec:
     """Automatic expansion: combine representative core issues with common legal facets."""
     base_cap = estimate_max_issues(base)
@@ -826,12 +926,168 @@ def expand_spec_with_facets(law: str, base: LawSpec, *, seed: int) -> LawSpec:
     spec.templates.extend(
         [
             "{core}: {facet}",
-            "{facet} zu {core}",
+            "{facet} with {core}",
             "{core} - {facet}",
-            "Frage zu {core}: {facet}",
+            "Question about {core}: {facet}",
         ]
     )
     return spec
+
+# Functions for training
+def sample_stratified_grid(
+    pool: List[Dict[str, str]],
+    target: Dict[Tuple[str, str], int],
+    seed: int,
+    forbid_texts: Set[str],
+) -> List[Dict[str, str]]:
+    """Sample exactly `target[(law, style)]` rows per (law, style) bucket."""
+    rng = random.Random(seed)
+    keys = sorted(target)
+    by_key: Dict[Tuple[str, str], List[Dict[str, str]]] = {k: [] for k in keys}
+
+    for r in pool:
+        k = (r["consensus_law"], r["style"])
+        if k in by_key:
+            by_key[k].append(r)
+
+    for k in keys:
+        rng.shuffle(by_key[k])
+
+    selected: List[Dict[str, str]] = []
+    used_texts: Set[str] = set(forbid_texts)
+
+    for k in keys:
+        need = target[k]
+        picks: List[Dict[str, str]] = []
+        for r in by_key[k]:
+            if len(picks) >= need:
+                break
+            t = r["query_text"]
+            if t in used_texts:
+                continue
+            used_texts.add(t)
+            picks.append(r)
+
+        if len(picks) != need:
+            law, style = k
+            raise RuntimeError(
+                f"Not enough unique candidates for (law={law}, style={style}): need={need}, got={len(picks)}. "
+                f"Increase --variants_per_style or --candidate_oversupply, or reduce --surface_noise_prob."
+            )
+        selected.extend(picks)
+
+    rng.shuffle(selected)
+    return selected
+def split_train_test_stratified_grid(
+    pool: List[Dict[str, str]],
+    train_target: Dict[Tuple[str, str], int],
+    test_target: Dict[Tuple[str, str], int],
+    seed: int,
+) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
+    """Partition a single pool into TRAIN and TEST with no text overlap, stratified by (law, style)."""
+    rng = random.Random(seed)
+
+    keys = sorted(set(train_target) | set(test_target))
+    by_key: Dict[Tuple[str, str], List[Dict[str, str]]] = {k: [] for k in keys}
+
+    for r in pool:
+        k = (r["consensus_law"], r["style"])
+        if k in by_key:
+            by_key[k].append(r)
+
+    for k in keys:
+        rng.shuffle(by_key[k])
+
+    used_texts: Set[str] = set()
+    train_rows: List[Dict[str, str]] = []
+    test_rows: List[Dict[str, str]] = []
+
+    for k in keys:
+        need_tr = train_target.get(k, 0)
+        need_te = test_target.get(k, 0)
+
+        tr_picks: List[Dict[str, str]] = []
+        te_picks: List[Dict[str, str]] = []
+
+        for r in by_key[k]:
+            if len(tr_picks) < need_tr:
+                t = r["query_text"]
+                if t in used_texts:
+                    continue
+                used_texts.add(t)
+                tr_picks.append(r)
+            elif len(te_picks) < need_te:
+                t = r["query_text"]
+                if t in used_texts:
+                    continue
+                used_texts.add(t)
+                te_picks.append(r)
+
+            if len(tr_picks) == need_tr and len(te_picks) == need_te:
+                break
+
+        if len(tr_picks) != need_tr or len(te_picks) != need_te:
+            law, style = k
+            raise RuntimeError(
+                f"Not enough unique candidates for (law={law}, style={style}): "
+                f"need_train={need_tr}, got_train={len(tr_picks)}; "
+                f"need_test={need_te}, got_test={len(te_picks)}. "
+                f"Increase --variants_per_style or --candidate_oversupply, or reduce --surface_noise_prob."
+            )
+
+        train_rows.extend(tr_picks)
+        test_rows.extend(te_picks)
+
+    rng.shuffle(train_rows)
+    rng.shuffle(test_rows)
+    return train_rows, test_rows
+
+def split_train_test_stratified_grid_test_topics_in_train(
+    pool: List[Dict[str, str]],
+    train_target: Dict[Tuple[str, str], int],
+    test_target: Dict[Tuple[str, str], int],
+    seed: int,
+) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
+    """IID split that maximizes train→test transfer.
+
+    Policy:
+      1) Sample TRAIN stratified by (law, style).
+      2) Sample TEST stratified by (law, style) but only from topics that appear in TRAIN (per-law).
+      3) Enforce no *exact text* overlap across splits.
+
+    This evaluates primarily surface-form and paraphrase generalization within the same topic set,
+    and typically yields higher test performance than unconstrained i.i.d. partitioning.
+    """
+    # 1) TRAIN from full pool
+    train_rows = sample_stratified_grid(pool, train_target, seed, forbid_texts=set())
+
+    # Topics observed in TRAIN (per-law)
+    train_topics_by_law: Dict[str, Set[str]] = {}
+    for r in train_rows:
+        law = r["consensus_law"]
+        train_topics_by_law.setdefault(law, set()).add(r["topic_id"])
+
+    # 2) Restrict candidates for TEST to topics seen in TRAIN
+    pool_for_test = [
+        r for r in pool
+        if r["topic_id"] in train_topics_by_law.get(r["consensus_law"], set())
+    ]
+
+    forbid = {r["query_text"] for r in train_rows}
+
+    # Use a deterministic offset for TEST sampling to avoid coupling shuffles
+    try:
+        test_rows = sample_stratified_grid(pool_for_test, test_target, seed + 101, forbid_texts=forbid)
+    except RuntimeError as e:
+        raise RuntimeError(
+            "Not enough candidates for TEST after restricting to topics seen in TRAIN. "
+            "Increase --variants_per_style and/or --candidate_oversupply, or switch to --split_mode iid_unrestricted."
+        ) from e
+
+    rng = random.Random(seed + 999)
+    rng.shuffle(train_rows)
+    rng.shuffle(test_rows)
+    return train_rows, test_rows
 
 
 def main() -> None:
@@ -854,37 +1110,16 @@ def main() -> None:
         ),
     )
 
-    # Leakage control
-    ap.add_argument("--law_mention_prob", type=float, default=0.12)
-    ap.add_argument("--keyword_law_mention_prob", type=float, default=0.25)
 
     # Noise control
     ap.add_argument("--surface_noise_prob", type=float, default=0.06)
 
     # Richness controls (improve topical realism and discriminative signal)
     ap.add_argument(
-        "--law_context_prob",
-        type=float,
-        default=0.65,
-        help="Probability of using law-specific context overrides (authority/counterparty) when available.",
-    )
-    ap.add_argument(
         "--topic_term_prob",
         type=float,
         default=0.30,
         help="Probability of selecting a per-topic law-lexicon term (no law abbreviations).",
-    )
-    ap.add_argument(
-        "--issue_term_prob",
-        type=float,
-        default=0.35,
-        help="Per-query probability of enriching the issue with a law-lexicon term.",
-    )
-    ap.add_argument(
-        "--keyword_term_prob",
-        type=float,
-        default=0.35,
-        help="Probability of including the per-topic term into keyword-style queries.",
     )
 
     # Candidate oversupply safety factor (per law, per split or combined depending on split_mode)
@@ -960,13 +1195,8 @@ def main() -> None:
                         law=law,
                         seed=split_seed,
                         variants_per_style=args.variants_per_style,
-                        law_mention_prob=args.law_mention_prob,
-                        keyword_law_mention_prob=args.keyword_law_mention_prob,
                         surface_noise_prob=args.surface_noise_prob,
-                        law_context_prob=args.law_context_prob,
                         topic_term_prob=args.topic_term_prob,
-                        issue_term_prob=args.issue_term_prob,
-                        keyword_term_prob=args.keyword_term_prob,
                     )
                 )
             return pool
@@ -1017,13 +1247,8 @@ def main() -> None:
                         law=law,
                         seed=split_seed,
                         variants_per_style=args.variants_per_style,
-                        law_mention_prob=args.law_mention_prob,
-                        keyword_law_mention_prob=args.keyword_law_mention_prob,
                         surface_noise_prob=args.surface_noise_prob,
-                        law_context_prob=args.law_context_prob,
                         topic_term_prob=args.topic_term_prob,
-                        issue_term_prob=args.issue_term_prob,
-                        keyword_term_prob=args.keyword_term_prob,
                     )
                 )
             return pool
@@ -1074,13 +1299,8 @@ def main() -> None:
         "styles": STYLES,
         "variants_per_style": args.variants_per_style,
         "queries_per_topic": queries_per_topic,
-        "law_mention_prob": args.law_mention_prob,
-        "keyword_law_mention_prob": args.keyword_law_mention_prob,
         "surface_noise_prob": args.surface_noise_prob,
-        "law_context_prob": args.law_context_prob,
         "topic_term_prob": args.topic_term_prob,
-        "issue_term_prob": args.issue_term_prob,
-        "keyword_term_prob": args.keyword_term_prob,
         "candidate_oversupply": args.candidate_oversupply,
         "train_target_counts_by_law": train_target_law,
         "test_target_counts_by_law": test_target_law,
