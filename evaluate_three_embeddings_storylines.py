@@ -1839,6 +1839,8 @@ def load_corpus_parquet(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Corpus parquet not found: {path}")
     df = pd.read_parquet(path)
+    if "triathlon_rules" in df.columns:
+        df = df.rename(columns={"triathlon_rules": "law_type"})
     required = {"sentence_id", "law_type"}
     missing = required.difference(df.columns)
     if missing:
