@@ -44,6 +44,8 @@ import torch
 DEFAULT_CORPUS_PATH = Path("ris_sentences.parquet")
 DEFAULT_OUT_NPZ = Path("embedding_index.npz")
 DEFAULT_MODEL = "mixedbread-ai/deepset-mxbai-embed-de-large-v1"
+#"BAAI/bge-large-en-v1.5"
+#"BAAI/bge-base-en-v1.5"
 
 
 DEFAULT_BATCH = 1

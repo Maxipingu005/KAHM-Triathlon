@@ -61,6 +61,8 @@ DEFAULT_TEXT_COL = "sentence"
 
 # Fixed tokenizer model
 DEFAULT_HF_TOKENIZER_MODEL = "mixedbread-ai/deepset-mxbai-embed-de-large-v1"
+#"BAAI/bge-large-en-v1.5"
+#"BAAI/bge-base-en-v1.5"
 
 
 # ----------------------------- Permanent fix: write/import components module -----------------------------
