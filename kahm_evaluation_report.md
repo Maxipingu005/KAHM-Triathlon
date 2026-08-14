@@ -108,7 +108,7 @@ Majority-vote predominance threshold for majority-accuracy: **τ = 0.10**.
 All metrics are computed **per query** at cutoff *k* and then averaged across queries. We report 95% confidence intervals via paired bootstrap.
 
 - **Hit@k:** 1 if at least one retrieved sentence is labeled with the gold law, else 0.
-- **MRR@k (unique laws):** reciprocal rank of the first occurrence of the gold law when the top-*k* list is collapsed to unique laws.
+- **MRR@k (unique documents):** reciprocal rank of the first occurrence of the gold law when the top-*k* list is collapsed to unique documents.
 - **Top-1 accuracy:** 1 if the top-ranked sentence law equals the gold law, else 0.
 - **Majority-accuracy:** 1 if the plurality law in top-*k* equals gold **and** its fraction ≥ τ; otherwise 0 (abstentions count as 0).
 - **Mean consensus fraction:** fraction of the top-*k* sentences that belong to the gold law.
@@ -118,7 +118,7 @@ All metrics are computed **per query** at cutoff *k* and then averaged across qu
 
 ### Micro-averaged quality (mean ± 95% CI)
 
-**MRR@k (unique laws)**
+**MRR@k (unique documents)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
@@ -202,7 +202,7 @@ All metrics are computed **per query** at cutoff *k* and then averaged across qu
 
 Macro-averaging computes metrics per law and then averages across laws (each law has equal weight). This is a robustness check against label-frequency skew.
 
-**Macro MRR@k (unique laws)**
+**Macro MRR@k (unique documents)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
