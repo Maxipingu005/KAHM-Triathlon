@@ -1,0 +1,9 @@
+
+
+2.
+call Triathlon file from_English_pdf.py
+
+3. Build the semantic corpus index:
+
+set OMP_NUM_THREADS=6
+python build_embedding_index_npz.py --corpus ris_sentences.parquet --out embedding_index.npz --normalize --truncate-dim 1024 --batch-size 8

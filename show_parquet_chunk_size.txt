@@ -1,0 +1,10 @@
+import pandas as pd
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("mixedbread-ai/deepset-mxbai-embed-de-large-v1")
+df = pd.read_parquet("ris_sentences_law.parquet")
+df["tokens"] = df["sentence"].apply(lambda x: len(tokenizer.encode(x, add_special_tokens=False)))
+
+print(df["tokens"].describe(percentiles=[0.5, 0.75, 0.9, 0.95, 0.99]))
+print("Chunks mit mehr als 512 Tokens:", (df["tokens"] > 512).sum())
+print("Maximale Tokens:", df["tokens"].max())
