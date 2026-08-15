@@ -1,4 +1,4 @@
-# KAHM embeddings: retrieval evaluation on Austrian laws
+# KAHM embeddings: retrieval evaluation on Austrian docs.
 
 Generated: 2026-08-15 18:56:26 | script=evaluate_three_embeddings_storylines.py | version=2026-02-23-scientific-pubreport-v1
 
@@ -19,7 +19,7 @@ Uncertainty is quantified with a paired nonparametric bootstrap across queries (
 - Corpus file: `ris_sentences.parquet`
 - Aligned sentences (intersection of embedding indices): **529**
 - Embedding space dimension (transformer index): **1024**
-- Label universe size (laws present in aligned corpus): **27**
+- Label universe size (docs. present in aligned corpus): **27**
 
 Top-10 corpus law priors (count and prior probability):
 
@@ -65,7 +65,7 @@ Test query-set composition (after filtering):
 - split_mode: **iid**
 - train_n: **4000**
 - test_n: **1000**
-- n_laws: **27**
+- n_docs.: **27**
 - variants_per_style: **3**
 - queries_per_topic: **21**
 - candidate_oversupply: **2.0**
@@ -108,7 +108,7 @@ Majority-vote predominance threshold for majority-accuracy: **τ = 0.10**.
 All metrics are computed **per query** at cutoff *k* and then averaged across queries. We report 95% confidence intervals via paired bootstrap.
 
 - **Hit@k:** 1 if at least one retrieved sentence is labeled with the gold law, else 0.
-- **MRR@k (unique laws):** reciprocal rank of the first occurrence of the gold law when the top-*k* list is collapsed to unique laws.
+- **MRR@k (unique docs.):** reciprocal rank of the first occurrence of the gold law when the top-*k* list is collapsed to unique docs..
 - **Top-1 accuracy:** 1 if the top-ranked sentence law equals the gold law, else 0.
 - **Majority-accuracy:** 1 if the plurality law in top-*k* equals gold **and** its fraction ≥ τ; otherwise 0 (abstentions count as 0).
 - **Mean consensus fraction:** fraction of the top-*k* sentences that belong to the gold law.
@@ -118,7 +118,7 @@ All metrics are computed **per query** at cutoff *k* and then averaged across qu
 
 ### Micro-averaged quality (mean ± 95% CI)
 
-**MRR@k (unique laws)**
+**MRR@k (unique docs.)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
@@ -200,9 +200,9 @@ All metrics are computed **per query** at cutoff *k* and then averaged across qu
 
 ### Macro-averaged quality (per-law average; robustness)
 
-Macro-averaging computes metrics per law and then averages across laws (each law has equal weight). This is a robustness check against label-frequency skew.
+Macro-averaging computes metrics per law and then averages across docs. (each law has equal weight). This is a robustness check against label-frequency skew.
 
-**Macro MRR@k (unique laws)**
+**Macro MRR@k (unique docs.)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |

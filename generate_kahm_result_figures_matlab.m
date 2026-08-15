@@ -36,7 +36,7 @@ function generate_kahm_result_figures_matlab(reportPath, outDir)
     txt = fileread(reportPath);
 
     % Parse report tables.
-    mrrTbl       = parseMetricTable(txt, '**MRR@k (unique documents)**');
+    mrrTbl       = parseMetricTable(txt, '**MRR@k (unique docs.)**');
     mrrTbl.idf_svd.label = " IDF--SVD";
     mrrTbl.kahm_query_mb_corpus.label = " KAHM";
     mrrTbl.mixedbread_true.label = " Mixedbread";
@@ -121,8 +121,8 @@ function plotQualityFigure(mrrTbl, hitTbl, top1Tbl, outDir)
     tl = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 
     ax1 = nexttile(tl, 1); hold(ax1, 'on');
-    plotMetricWithCI(ax1, mrrTbl, 'MRR@k (unique documents)');
-    xlabel(ax1, 'Retrieval cutoff k','FontSize',18); ylabel(ax1, 'MRR@k (unique documents)','FontSize',18);
+    plotMetricWithCI(ax1, mrrTbl, 'MRR@k (unique docs.)');
+    xlabel(ax1, 'Retrieval cutoff k','FontSize',18); ylabel(ax1, 'MRR@k (unique docs.)','FontSize',18);
     title(ax1, 'Document-level ranking quality','FontSize',18); grid(ax1, 'on'); box(ax1, 'on');
 
     ax2 = nexttile(tl, 2); hold(ax2, 'on');
@@ -198,15 +198,13 @@ function plotTradeoffFigure(mrrTbl, runtimeTbl, outDir)
 
     set(ax, 'XScale', 'log');
     xlabel(ax, 'Online per-query time (ms, log scale)','FontSize',18);
-    ylabel(ax, 'MRR@20 (unique documents)','FontSize',18);
+    ylabel(ax, 'MRR@20 (unique docs.)','FontSize',18);
     title(ax, 'Compute-quality trade-off','FontSize',18);
     grid(ax, 'on'); box(ax, 'on');
 
     exportFigure(fig, fullfile(outDir, 'compute_quality_tradeoff'));
     close(fig);
 end
-
-
 
 function plotMetricWithCI(ax, tbl, ~)
     methods = {'idf_svd','kahm_query_mb_corpus','mixedbread_true'};
@@ -219,10 +217,21 @@ function plotMetricWithCI(ax, tbl, ~)
         lo = tbl.(m).lo(:)';
         hi = tbl.(m).hi(:)';
         c = colors.(m);
-        patch(ax, [ks fliplr(ks)], [lo fliplr(hi)], c, ...
-            'FaceAlpha', 0.14, 'EdgeColor', 'none', 'HandleVisibility', 'off');
-        plot(ax, ks, pt, 'Color', c, 'LineWidth', 1.8, 'Marker', markers.(m), ...
-            'MarkerSize', 6, 'DisplayName', tbl.(m).label);
+
+        % Fehlerbalken (nur Balken und Marker, keine verbindende Linie)
+        errorbar(ax, ks, pt, pt - lo, hi - pt, ...
+            'LineStyle', 'none', ...            % keine Linie durch die Punkte
+            'Color', c, 'LineWidth', 1.2, ...
+            'CapSize', 6, ...                   % Breite der Endstriche
+            'Marker', markers.(m), ...
+            'MarkerSize', 6, ...
+            'DisplayName', tbl.(m).label);      % Legendeneintrag
+
+        % Durchgezogene Linie durch die Punkte (separat, unsichtbar für Legende)
+        plot(ax, ks, pt, '-', ...
+            'Color', c, 'LineWidth', 1.8, ...
+            'Marker', 'none', ...
+            'HandleVisibility', 'off');
     end
     xlim(ax, [min(ks)-0.5, max(ks)+0.5]);
 end
