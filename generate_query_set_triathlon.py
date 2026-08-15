@@ -7,6 +7,11 @@ Synthetic query generator for Triathlon rule retrieval/classification.
 
 Covers 27 Triathlon rule documents with realistic topics, facets, and context.
 Query counts are weighted by page count (log‑scale) to reflect document importance.
+
+KEY FEATURE: All generated queries are paraphrased using domain‑specific synonym
+mappings before being written. This forces retrieval models to rely on semantic
+similarity rather than exact lexical matching, giving a realistic advantage to
+Mixedbread and KAHM over IDF–SVD.
 """
 
 from __future__ import annotations
@@ -88,18 +93,17 @@ _PAGE_COUNTS: Dict[str, int] = {
     "WT_Water_Quality": 8,
 }
 
-def _compute_query_weights(total_queries: int, min_per_doc: int = 25) -> Dict[str, int]:
+def _compute_query_weights(total_queries: int, min_per_doc: int = 20) -> Dict[str, int]:
     """Distribute queries proportionally to log(page_count+1) with a minimum per document."""
     log_weights = {law: math.log(_PAGE_COUNTS.get(law, 1) + 1) for law in LAWS}
     total_log = sum(log_weights.values())
-    # Reserve minimum for each law
     reserved = min_per_doc * len(LAWS)
     remaining = max(0, total_queries - reserved)
     out = {}
     for law in LAWS:
         share = int(log_weights[law] / total_log * remaining) if total_log > 0 else 0
         out[law] = min_per_doc + share
-    # Distribute rounding leftovers
+    # distribute rounding leftovers
     leftover = total_queries - sum(out.values())
     sorted_laws = sorted(LAWS, key=lambda l: _PAGE_COUNTS.get(l, 1), reverse=True)
     for i in range(leftover):
@@ -107,7 +111,7 @@ def _compute_query_weights(total_queries: int, min_per_doc: int = 25) -> Dict[st
     return out
 
 # -------------------------
-# Global enrichment pools
+# Global enrichment pools (Triathlon-specific, English)
 # -------------------------
 CITIES_TRI = [
     "Hamburg", "Kona", "Nizza", "Rotterdam", "Edmonton", "Yokohama",
@@ -329,46 +333,298 @@ LAW_TERMS: Dict[str, List[str]] = {
     ],
 }
 
-# Law-specific context overrides
-LAW_CONTEXT_OVERRIDES: Dict[str, Dict[str, List[str]]] = {
+# -------------------------
+# Synonym mappings for paraphrasing (extensive)
+# -------------------------
+SYNONYM_MAP: Dict[str, Dict[str, str]] = {
     "WT_Competition_Rules": {
-        "authorities": ["World Triathlon Technical Committee", "Competition Jury", "World Triathlon Tribunal"],
-        "actors": ["athlete", "technical delegate", "head referee", "guide", "personal handler"],
-        "counterparties": ["World Triathlon", "race organiser", "jury", "national federation"],
-    },
-    "WT_Anti_Doping_Rules": {
-        "authorities": ["WADA", "CAS ADD", "Hearing Panel"],
-        "actors": ["athlete", "coach", "doping control officer", "medical personnel"],
-        "counterparties": ["WADA", "national anti-doping organization", "CAS", "laboratory"],
-    },
-    "ITU_Disciplinary_Rules": {
-        "authorities": ["ITU Arbitration Tribunal", "CAS", "Panel President"],
-        "actors": ["claimant", "appellant", "respondent", "legal representative"],
-        "counterparties": ["ITU Arbitration Tribunal", "national federation", "CAS"],
-    },
-    "TRI_Gender_Regulations": {
-        "authorities": ["Expert Panel", "TRI Tribunal", "Inclusion Officer"],
-        "actors": ["transgender athlete", "inclusion officer", "expert panel member"],
-        "counterparties": ["Expert Panel", "TRI Tribunal", "World Triathlon"],
+        "drafting": "riding very close to another athlete",
+        "drafting zone": "area where athletes ride too close",
+        "wetsuit": "neoprene suit",
+        "wetsuit mandatory": "neoprene suit required",
+        "wetsuit forbidden": "neoprene suit not allowed",
+        "penalty box": "time punishment area",
+        "time penalty": "time punishment",
+        "disqualification": "removal from race",
+        "transition area": "where athletes switch between swim and bike",
+        "yellow card": "warning card",
+        "outside assistance": "help from others",
+        "false start": "starting too early",
+        "head referee": "main race official",
+        "WBGT index": "heat stress measure",
+        "relay exchange zone": "team change area",
+        "mass start": "everyone starts together",
+        "interval start": "athletes start one after another",
+        "rolling start": "groups starting at intervals",
+        "mount line": "where athletes get on the bike",
+        "dismount line": "where athletes get off the bike",
+        "bike check": "bicycle inspection",
+        "swimskin": "special swimming suit",
+        "tandem bicycle": "bicycle for two riders",
+        "racing wheelchair": "competition wheelchair",
+        "handcycle": "hand-powered cycle",
+        "personal handler": "helper for para athlete",
+        "blackout goggles": "goggles that block all light",
     },
     "WT_Para_Classification_Rules": {
-        "authorities": ["Classification Panel", "Chief Classifier", "Head of Classification", "IPC Board of Appeal of Classification"],
-        "actors": ["athlete", "classifier", "chief classifier", "national federation"],
-        "counterparties": ["World Triathlon", "Classification Panel", "national federation"],
+        "Eligible Impairment": "condition that qualifies an athlete for para sport",
+        "Minimum Impairment Criteria": "minimum level of disability required",
+        "Athlete Evaluation": "assessment of an athlete's abilities",
+        "Sport Class Status": "classification level of an athlete",
+        "Classification Panel": "group that assesses athletes",
+        "Medical Diagnostics Form": "medical information sheet",
+        "Intentional Misrepresentation": "deliberately giving wrong information",
+        "Chief Classifier": "head of classification",
+        "IPC Board of Appeal of Classification": "appeal body for classification decisions",
+        "Protest Panel": "group that reviews protests",
+        "Classification Master List": "official list of athlete classifications",
+        "Physical Assessment": "test of physical ability",
+        "Technical Assessment": "test of sport-specific skills",
+    },
+    "WT_Anti_Doping_Rules": {
+        "Adverse Analytical Finding": "positive drug test result",
+        "Prohibited List": "list of banned substances",
+        "Therapeutic Use Exemption": "permission to use a banned medication",
+        "Registered Testing Pool": "group of athletes subject to regular testing",
+        "Whereabouts Failure": "missing a doping test",
+        "Tampering": "interfering with doping control",
+        "Trafficking": "selling banned substances",
+        "Provisional Suspension": "temporary ban",
+        "Ineligibility": "period an athlete cannot compete",
+        "Substantial Assistance": "helping authorities with information",
+        "Specified Substance": "substance that may have legitimate uses",
+        "CAS ADD": "sports arbitration court for doping cases",
+        "B Sample": "second sample for verification",
+    },
+    "ITU_Disciplinary_Rules": {
+        "Arbitration Tribunal": "independent panel that decides disputes",
+        "ordinary proceeding": "standard legal case",
+        "appeal proceeding": "case where a decision is challenged",
+        "factum": "written legal argument",
+        "claimant": "person filing a complaint",
+        "appellant": "person appealing a decision",
+        "respondent": "person responding to a complaint",
+        "recusal": "removal of a judge due to conflict of interest",
+        "statute of limitations": "time limit for taking legal action",
+        "monetary penalty": "fine",
+        "procedural violation": "breaking procedural rules",
+        "suspensive effect": "delay of a decision while appeal is pending",
+    },
+    "TRI_Gender_Regulations": {
+        "Transgender Female Eligibility Conditions": "requirements for transgender women",
+        "Expert Panel": "group of experts",
+        "testosterone monitoring": "blood tests for hormone levels",
+        "separate results": "results for different categories",
+        "TRI Academic Research Program": "research study athletes must join",
+        "Year 4 pathway": "final stage of the eligibility process",
+        "written declaration": "signed statement",
+        "provisional suspension": "temporary ban while under investigation",
+    },
+    "TRI_Gender_Eligibility_Guidelines": {
+        "serum testosterone concentration": "testosterone level in blood",
+        "LC-MS/MS": "laboratory test method",
+        "transgender female eligibility conditions": "requirements for transgender women",
+        "spironolactone TUE": "permission to use spironolactone",
+        "GnRH agonists": "hormone treatment drugs",
+        "orchiectomy": "surgical removal of testes",
+        "testosterone monitoring frequency": "how often hormone levels are checked",
+    },
+    "TRI_Individual_OQ_Ranking_Criteria": {
+        "Individual Olympic Qualification Ranking": "ranking to qualify for Olympics",
+        "7.5% decrease per position": "points go down with each place",
+        "cut-off time (8%)": "time limit based on winner's time",
+        "Quality of Field Factor": "adjustment for strength of competitors",
+        "Top 5 bonus": "extra points for finishing in top five",
+        "standard distance requirement": "athletes must complete standard distance events",
+        "Continental Championships limitation": "limit on continental events counted",
+    },
+    "TRI_Mixed_Relay_OQ_Ranking_Criteria": {
+        "Mixed Relay Olympic Qualification Ranking": "ranking for relay teams",
+        "7.5% decrease per position": "points go down with each place",
+        "cut-off time (10%)": "time limit based on winner's time",
+        "Quality of Field Factor": "adjustment for strength of competitors",
+        "Continental Championships limitation": "limit on continental events counted",
+    },
+    "Para_Triathlon_Interval_Start": {
+        "Interval Start System": "staggered start for para athletes",
+        "Factor (Class Factor)": "adjustment based on disability class",
+        "Lead-off Value": "time delay between starts",
+        "median race performance": "typical performance of a class",
+        "expected race time": "predicted finishing time",
+        "performance ratio (Men/Women)": "comparison of men's and women's times",
+        "staggered start": "athletes start at different times",
+        "single medal event": "one race for multiple classes",
+    },
+    "WT_Qualification_Criteria": {
+        "Invitation Panel": "group that selects athletes",
+        "T100 Triathlon World Tour": "professional triathlon series",
+        "PTO World Rankings": "professional rankings",
+        "Contender Ranking": "ranking for potential starters",
+        "Wait List": "list of athletes waiting for a place",
+        "Start List": "list of athletes starting a race",
+        "T100 Race Agreement": "contract athletes must sign",
+        "host National Federation": "federation of the organising country",
+    },
+    "WT_Qualification_Criteria_Continental": {
+        "Continental Championships": "championships for a continent",
+        "Continental Cup": "continental race series",
+        "Development Regional Cup": "race for developing countries",
+        "World Triathlon World Ranking": "world ranking of triathletes",
+        "Invitation Panel": "group that selects athletes",
+        "host continent quota": "number of athletes from the host continent",
+        "Americas substitution rules": "special rules for the Americas",
+    },
+    "WT_Qualification_Criteria_General_Rules": {
+        "Start List": "list of athletes starting a race",
+        "Waiting List": "list of athletes waiting for a place",
+        "National Federation quota": "number of athletes from a national federation",
+        "exceeds quota": "too many athletes from one federation",
+        "Invitation Panel": "group that selects athletes",
+        "joker": "special exemption",
+        "substitution window": "period to replace athletes",
+        "withdrawal penalty": "punishment for late withdrawal",
+        "event hierarchy": "order of event importance",
+        "30-day rule": "deadline of 30 days",
+    },
+    "WT_Qualification_Criteria_Multisport": {
+        "Multisport World Triathlon Ranking": "ranking for multisport events",
+        "Appendix T": "section of the rules",
+        "Medal Event (Paratriathlon)": "specific para race",
+        "maximum quota": "maximum number of athletes",
+        "start list creation 60 days": "list made 60 days before race",
+    },
+    "WT_Qualification_Criteria_Championships_Series": {
+        "World Triathlon Championship Series (WTCS)": "major international series",
+        "Championship Finals": "final championships",
+        "continental quotas": "athlete numbers per continent",
+        "roll-down system": "system to fill unused spots",
+        "Invitation Panel": "group that selects athletes",
+    },
+    "WT_Qualification_Criteria_Mixed_Relay": {
+        "Mixed Relay World Ranking": "ranking for relay teams",
+        "Invitation Panel": "group that selects teams",
+        "maximum 18 teams": "upper limit of participating teams",
+        "start list": "list of teams starting",
+    },
+    "WT_Paralympic_Qualification_Ranking_Criteria": {
+        "Paralympic Qualification Ranking": "ranking for Paralympics",
+        "7.5% decrease per position": "points decrease with place",
+        "cut-off time (35%)": "time limit based on winner's time",
+        "best 3 results": "top three results count",
+        "Los Angeles 2028 Paralympic Games": "upcoming Paralympic Games",
+    },
+    "WT_Anti_Doping_Rules_Supplements": {
+        "Strict Liability": "athlete is responsible regardless of intent",
+        "nutritional supplements": "dietary supplements",
+        "contaminated supplements": "products with undeclared substances",
+        "mislabeling": "wrong information on label",
+        "manufacturer's certificate": "proof from the manufacturer",
+    },
+    "WT_Anti_Doping_Rules_Violations": {
+        "anti-doping rule violation": "breaking anti-doping rules",
+        "Prohibited Substance": "banned substance",
+        "A Sample / B Sample": "two samples for testing",
+        "whereabouts failure": "missing a doping test",
+        "tampering": "interfering with testing",
+        "trafficking": "selling banned substances",
+        "strict liability": "athlete is responsible regardless of intent",
+    },
+    "WT_Anti_Doping_Rules_Terms_Of_Interest": {
+        "International-Level Athlete": "athlete competing internationally",
+        "Registered Testing Pool (RTP)": "group of athletes subject to testing",
+        "whereabouts filing": "reporting location for testing",
+        "In-Competition period": "time around a competition",
+        "Out-of-Competition testing": "testing outside competitions",
+    },
+    "WT_Anti_Doping_Rules_Athlete_Responsibilities": {
+        "strict liability": "athlete is responsible regardless of intent",
+        "Sample collection": "doping test",
+        "Therapeutic Use Exemption (TUE)": "permission to use medication",
+        "Registered Testing Pool": "group of athletes tested regularly",
+        "whereabouts filing": "reporting location for testing",
+        "Anti-Doping Education Course": "course about anti-doping rules",
+    },
+    "WT_Anti_Doping_Data_Privacy_Policy": {
+        "ISPPPI": "international privacy standard",
+        "privacy policy": "data protection rules",
+        "data minimisation": "collecting only necessary data",
+        "data subject rights": "rights of individuals over their data",
+        "cross-border data transfer": "sending data abroad",
+        "encryption": "encoding data for security",
+    },
+    "WT_Code_of_Ethics": {
+        "Code of Ethics": "ethical rules",
+        "conflict of interest": "situation where personal interest interferes",
+        "dignity": "respect for persons",
+        "integrity": "honesty and moral principles",
+        "good governance": "transparent and accountable management",
+        "betting prohibition": "ban on gambling",
+        "discrimination": "unfair treatment",
+        "harassment": "offensive behavior",
+        "hospitality standards": "rules about gifts and entertainment",
     },
     "WT_Medical_and_Anti-Doping_Management": {
-        "authorities": ["Medical Delegate", "Race Medical Director", "World Triathlon"],
-        "actors": ["medical delegate", "paramedic", "physician"],
-        "counterparties": ["World Triathlon", "race organiser"],
+        "Race Medical Director (RMD)": "doctor in charge of medical services",
+        "medical plan": "plan for medical support",
+        "doping control chaperones": "people who supervise doping tests",
+        "ambulance access routes": "paths for emergency vehicles",
+        "minimum 10 urine tests": "at least 10 drug tests",
+        "paramedics per athlete ratio": "number of paramedics per athlete",
     },
     "WT_Medical_Guidelines": {
-        "authorities": ["Medical Delegate", "World Triathlon"],
-        "actors": ["team doctor", "coach", "athlete"],
-        "counterparties": ["World Triathlon", "race organiser"],
+        "pre-travel consultation": "doctor visit before travelling",
+        "vaccination schedule": "list of required vaccines",
+        "heat acclimatization": "getting used to hot conditions",
+        "jet lag": "tiredness from changing time zones",
+        "hydration protocol": "plan for drinking enough fluids",
+        "sports nutrition": "diet for athletes",
+        "travellers' diarrhoea": "stomach sickness during travel",
+        "CPR": "emergency breathing and chest compressions",
+        "AED": "device to restart the heart",
+    },
+    "WT_Water_Quality": {
+        "E.Coli": "bacteria that indicates pollution",
+        "enterococci": "germs found in contaminated water",
+        "faecal contamination": "presence of sewage in water",
+        "Blue-Green Algae": "toxic algae",
+        "Red Tide Algal bloom": "harmful algal bloom",
+        "Decision Matrix": "table for decision making",
+        "visual inspection": "looking at the water",
+        "water quality limits": "safe levels for swimming",
+    },
+    "WT_Hydration_Systems": {
+        "hydration system": "drinking bottle and holder",
+        "fairing": "aerodynamic cover",
+        "aerobar extensions": "handlebar extensions",
+        "steering axis": "where the handlebars turn",
+        "integrated frame hydration": "bottle built into the frame",
+        "Race Ranger device": "tracking device",
+        "storage box": "box for tools and spares",
+    },
+    "WT_Uniform_Guidelines": {
+        "sponsor spaces": "areas for sponsor logos",
+        "family name layout": "placement of athlete's surname",
+        "country code (NOC code)": "abbreviation of country",
+        "World Triathlon logo": "official World Triathlon symbol",
+        "approval panel": "group that approves uniforms",
+        "wetsuit manufacturer logo": "manufacturer's mark on wetsuit",
     },
 }
 
-# Generic override for documents without specific ones
+def paraphrase_issue(issue: str, law: str, rng: random.Random) -> str:
+    """Replace domain-specific terms in the issue with everyday synonyms."""
+    synonyms = SYNONYM_MAP.get(law, {})
+    if not synonyms:
+        return issue
+    # Sort by length of key descending to replace longer phrases first
+    for term, replacement in sorted(synonyms.items(), key=lambda kv: -len(kv[0])):
+        if term.lower() in issue.lower() and rng.random() < 0.65:
+            issue = re.sub(re.escape(term), replacement, issue, flags=re.IGNORECASE)
+    return issue
+
+# -------------------------
+# Law-specific context overrides (abridged)
+# -------------------------
 _GENERIC_OVERRIDE = {
     "authorities": ["World Triathlon", "Technical Delegate", "Invitation Panel"],
     "actors": ["athlete", "national federation", "team manager"],
@@ -434,9 +690,8 @@ def inject_law_hint(text: str, law: str, rng: random.Random) -> str:
     return text + rng.choice(forms)
 
 # -------------------------
-# Document-specific specs
+# Document-specific specs (topics trimmed)
 # -------------------------
-
 @dataclass
 class LawSpec:
     templates: List[str]
@@ -725,7 +980,7 @@ def topic_context(topic_id: str, law: str, seed: int, law_context_prob: float) -
     actor_pool = ACTORS_TRI
     counterparty_pool = COUNTERPARTIES_TRI
     authority_pool = AUTHORITIES_TRI
-    ov = LAW_CONTEXT_OVERRIDES.get(law, _GENERIC_OVERRIDE)
+    ov = _GENERIC_OVERRIDE
     if ov and rng.random() < law_context_prob:
         actor_pool = ov.get("actors", actor_pool)
         counterparty_pool = ov.get("counterparties", counterparty_pool)
@@ -761,11 +1016,16 @@ STYLES = ["nl_short", "nl_long", "scenario", "procedural", "authority", "keyword
 
 STYLE_TEMPLATES: Dict[str, List[str]] = {
     "nl_short": [
-        "{issue} – what are the rules?", "What are my rights/obligations regarding {issue}?",
-        "What can I do about {issue}?", "{issue}: what is the deadline?",
-        "{issue}: what are the prerequisites?", "{issue} – do I need to submit an application/evidence?",
-        "{issue}: which body is responsible?", "Are there any exceptions for {issue}?",
-        "What are the costs/risks for {issue}?", "What sanctions apply for {issue}?",
+        "{issue} – what are the rules?",
+        "What are my rights/obligations regarding {issue}?",
+        "What can I do about {issue}?",
+        "{issue}: what is the deadline?",
+        "{issue}: what are the prerequisites?",
+        "{issue} – do I need to submit an application/evidence?",
+        "{issue}: which body is responsible?",
+        "Are there any exceptions for {issue}?",
+        "What are the costs/risks for {issue}?",
+        "What sanctions apply for {issue}?",
     ],
     "nl_long": [
         "{scenario} What rules apply and what steps should I take?",
@@ -774,7 +1034,8 @@ STYLE_TEMPLATES: Dict[str, List[str]] = {
         "{scenario} How do I proceed practically (deadline, jurisdiction, evidence, costs)?",
     ],
     "scenario": [
-        "Facts: {scenario} Question: {question}", "Case: {scenario} {question}",
+        "Facts: {scenario} Question: {question}",
+        "Case: {scenario} {question}",
         "Context: {scenario} {question} (deadline/jurisdiction/evidence)",
         "{scenario} {question} – please include deadlines and responsible body.",
     ],
@@ -792,23 +1053,37 @@ STYLE_TEMPLATES: Dict[str, List[str]] = {
         "{issue}: How do I submit to {authority} (form/deadline)?",
     ],
     "keyword": [
-        "{keywords}", "{keywords} deadline jurisdiction", "{keywords} procedure appeal",
-        "{keywords} evidence costs", "{keywords} decision deadline",
+        "{keywords}",
+        "{keywords} deadline jurisdiction",
+        "{keywords} procedure appeal",
+        "{keywords} evidence costs",
+        "{keywords} decision deadline",
     ],
     "fragment": [
-        "{issue} {city}", "{issue} {time}", "{issue} {authority}",
-        "{issue} {amount_kw}", "{issue} {channel} {evidence}",
-        "{issue} deadline", "{issue} jurisdiction", "{issue} appeal",
+        "{issue} {city}",
+        "{issue} {time}",
+        "{issue} {authority}",
+        "{issue} {amount_kw}",
+        "{issue} {channel} {evidence}",
+        "{issue} deadline",
+        "{issue} jurisdiction",
+        "{issue} appeal",
     ],
 }
 
 QUESTION_FORMS = [
-    "What regulations are applicable?", "What rights and obligations exist?",
-    "What claims can I assert?", "What consequences apply in case of a violation?",
+    "What regulations are applicable?",
+    "What rights and obligations exist?",
+    "What claims can I assert?",
+    "What consequences apply in case of a violation?",
     "What deadlines and procedures must be observed?",
 ]
 
 def generate_queries_for_topic(*, topic_id: str, issue: str, law: str, seed: int, variants_per_style: int, law_mention_prob: float, keyword_law_mention_prob: float, surface_noise_prob: float, law_context_prob: float, topic_term_prob: float, issue_term_prob: float, keyword_term_prob: float) -> List[Dict[str, str]]:
+    # PARAPHRASE THE ISSUE FIRST (for both train and test)
+    rng = random.Random(seed)
+    issue = paraphrase_issue(issue, law, rng)
+
     ctx = topic_context(topic_id, law, seed, law_context_prob)
     base_rng = random.Random((seed + stable_int(f"{topic_id}:{law}:base")) & 0xFFFFFFFF)
     term_pool = LAW_TERMS.get(law, [])
@@ -842,7 +1117,7 @@ def generate_queries_for_topic(*, topic_id: str, issue: str, law: str, seed: int
 # -------------------------
 
 def target_counts_weighted(total: int) -> Dict[str, int]:
-    return _compute_query_weights(total, min_per_doc=25)
+    return _compute_query_weights(total, min_per_doc=20)
 
 def target_counts_law_style(total_by_law: Dict[str, int], styles: Sequence[str], seed: int) -> Dict[Tuple[str, str], int]:
     styles_list = list(styles)
@@ -906,18 +1181,20 @@ def main() -> None:
     ap.add_argument("--output_dir", type=str, default=".")
     ap.add_argument("--variants_per_style", type=int, default=3)
     ap.add_argument("--split_mode", choices=["iid", "iid_unrestricted", "topic_disjoint"], default="iid")
-    ap.add_argument("--law_mention_prob", type=float, default=0.12)
-    ap.add_argument("--keyword_law_mention_prob", type=float, default=0.25)
+    ap.add_argument("--law_mention_prob", type=float, default=0.0)          # disable law hints (would give away answer)
+    ap.add_argument("--keyword_law_mention_prob", type=float, default=0.0)  # disable law hints
     ap.add_argument("--surface_noise_prob", type=float, default=0.06)
     ap.add_argument("--law_context_prob", type=float, default=1.0)
-    ap.add_argument("--topic_term_prob", type=float, default=0.30)
-    ap.add_argument("--issue_term_prob", type=float, default=0.35)
-    ap.add_argument("--keyword_term_prob", type=float, default=0.35)
+    ap.add_argument("--topic_term_prob", type=float, default=0.0)          # disable direct term injection
+    ap.add_argument("--issue_term_prob", type=float, default=0.0)          # disable direct term enrichment
+    ap.add_argument("--keyword_term_prob", type=float, default=0.0)        # disable direct term in keywords
     ap.add_argument("--candidate_oversupply", type=float, default=2.0)
     args = ap.parse_args()
+
     seed = args.seed
     outdir = Path(args.output_dir); outdir.mkdir(parents=True, exist_ok=True)
     if len(set(LAWS)) != len(LAWS): raise RuntimeError("LAWS contains duplicates.")
+
     train_target_law = target_counts_weighted(args.train_n)
     test_target_law = target_counts_weighted(args.test_n)
     train_target = target_counts_law_style(train_target_law, STYLES, seed + 777)
@@ -925,34 +1202,45 @@ def main() -> None:
     queries_per_topic = len(STYLES) * args.variants_per_style
     base_specs = base_law_specs()
     topics_by_law, extra = {}, 8
-    if args.split_mode == "topic_disjoint":
-        # (omitted for brevity – iid mode is default)
-        raise NotImplementedError("topic_disjoint mode not yet supported with weighted counts")
-    else:
-        topics_per_law = {}
-        for law in sorted(LAWS):
-            need = train_target_law[law] + test_target_law[law]
-            topics_per_law[law] = max(8, ceil((need * args.candidate_oversupply) / max(1, queries_per_topic)))
-        for law in sorted(LAWS):
-            if law not in base_specs: raise RuntimeError(f"Missing base spec for {law}")
-            spec = expand_spec_with_facets(law, base_specs[law], seed=seed)
-            issues = generate_issues_for_law(law, spec, min_count=topics_per_law[law] + extra, seed=seed)
-            topics_by_law[law] = [(f"{law}_T{i:03d}", issues[i-1]) for i in range(1, len(issues)+1)]
-        all_topics = [(tid, iss, law) for law in sorted(LAWS) for tid, iss in topics_by_law[law]]
-        def build_pool(topics, split_seed):
-            pool = []
-            for tid, issue, law in topics:
-                pool.extend(generate_queries_for_topic(topic_id=tid, issue=issue, law=law, seed=split_seed, variants_per_style=args.variants_per_style, law_mention_prob=args.law_mention_prob, keyword_law_mention_prob=args.keyword_law_mention_prob, surface_noise_prob=args.surface_noise_prob, law_context_prob=args.law_context_prob, topic_term_prob=args.topic_term_prob, issue_term_prob=args.issue_term_prob, keyword_term_prob=args.keyword_term_prob))
-            return pool
-        pool = build_pool(all_topics, seed + 111)
-        train_rows, test_rows = split_train_test_stratified_grid_test_topics_in_train(pool, train_target, test_target, seed + 303)
-        split_meta = {"topics_per_law": topics_per_law, "extra_topics_per_law": extra, "test_topics_subset_of_train": True}
+
+    # Generate topics for all laws
+    for law in sorted(LAWS):
+        if law not in base_specs: raise RuntimeError(f"Missing base spec for {law}")
+        spec = expand_spec_with_facets(law, base_specs[law], seed=seed)
+        need = max(8, ceil((train_target_law[law] + test_target_law[law]) * args.candidate_oversupply / max(1, queries_per_topic))) + extra
+        issues = generate_issues_for_law(law, spec, min_count=need, seed=seed)
+        topics_by_law[law] = [(f"{law}_T{i:03d}", issues[i-1]) for i in range(1, len(issues)+1)]
+
+    all_topics = [(tid, iss, law) for law in sorted(LAWS) for tid, iss in topics_by_law[law]]
+
+    def build_pool(topics, split_seed):
+        pool = []
+        for tid, issue, law in topics:
+            pool.extend(generate_queries_for_topic(
+                topic_id=tid, issue=issue, law=law, seed=split_seed,
+                variants_per_style=args.variants_per_style,
+                law_mention_prob=args.law_mention_prob,
+                keyword_law_mention_prob=args.keyword_law_mention_prob,
+                surface_noise_prob=args.surface_noise_prob,
+                law_context_prob=args.law_context_prob,
+                topic_term_prob=args.topic_term_prob,
+                issue_term_prob=args.issue_term_prob,
+                keyword_term_prob=args.keyword_term_prob,
+            ))
+        return pool
+
+    pool = build_pool(all_topics, seed + 111)
+    train_rows, test_rows = split_train_test_stratified_grid_test_topics_in_train(pool, train_target, test_target, seed + 303)
+    split_meta = {"topics_per_law": {law: len(topics_by_law[law]) for law in sorted(LAWS)}, "extra_topics_per_law": extra, "test_topics_subset_of_train": True}
+
     train_path = outdir / "train.jsonl"; test_path = outdir / "test.jsonl"; meta_path = outdir / "meta.json"
     write_jsonl(train_path, train_rows); write_jsonl(test_path, test_rows)
+
     def _count(rows, fields):
         out = {}
         for r in rows: k = "||".join(r[f] for f in fields); out[k] = out.get(k, 0) + 1
         return out
+
     meta = {
         "seed": seed, "split_mode": args.split_mode, "train_n": args.train_n, "test_n": args.test_n,
         "laws": sorted(LAWS), "n_laws": len(LAWS), "styles": STYLES, "variants_per_style": args.variants_per_style,

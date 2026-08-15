@@ -1,6 +1,6 @@
 # KAHM embeddings: retrieval evaluation on Austrian laws
 
-Generated: 2026-08-10 00:48:23 | script=evaluate_three_embeddings_storylines.py | version=2026-02-23-scientific-pubreport-v1
+Generated: 2026-08-15 18:56:26 | script=evaluate_three_embeddings_storylines.py | version=2026-02-23-scientific-pubreport-v1
 
 ## Summary
 
@@ -45,18 +45,18 @@ Top-10 corpus law priors (count and prior probability):
 
 Test query-set composition (after filtering):
 
-- Unique topic IDs: **553**
+- Unique topic IDs: **547**
 - Unique query texts: **1000** (duplicates=0)
 
 | Style | Count | Frac |
 | --- | --- | --- |
-| scenario | 145 | 0.145 |
+| procedural | 145 | 0.145 |
+| authority | 144 | 0.144 |
 | keyword | 144 | 0.144 |
-| nl_short | 144 | 0.144 |
-| procedural | 144 | 0.144 |
-| nl_long | 143 | 0.143 |
-| authority | 140 | 0.140 |
-| fragment | 140 | 0.140 |
+| nl_short | 143 | 0.143 |
+| fragment | 142 | 0.142 |
+| nl_long | 141 | 0.141 |
+| scenario | 141 | 0.141 |
 
 ### Synthetic query generation (metadata)
 
@@ -69,13 +69,13 @@ Test query-set composition (after filtering):
 - variants_per_style: **3**
 - queries_per_topic: **21**
 - candidate_oversupply: **2.0**
-- law_mention_prob: **0.12**
-- keyword_law_mention_prob: **0.25**
+- law_mention_prob: **0.0**
+- keyword_law_mention_prob: **0.0**
 - surface_noise_prob: **0.06**
 - law_context_prob: **1.0**
-- topic_term_prob: **0.3**
-- issue_term_prob: **0.35**
-- keyword_term_prob: **0.35**
+- topic_term_prob: **0.0**
+- issue_term_prob: **0.0**
+- keyword_term_prob: **0.0**
 - test_topics_subset_of_train: **True**
 
 Split semantics (from the generator):
@@ -86,7 +86,7 @@ Split semantics (from the generator):
 ### Split hygiene diagnostics
 
 - Exact-text overlap (TRAIN ∩ TEST): **0** queries
-- Topic overlap (TRAIN ∩ TEST): **553** topics
+- Topic overlap (TRAIN ∩ TEST): **547** topics
 - Topic overlap fraction of TEST: **1.000**
 
 ### Label-leakage diagnostics (test)
@@ -108,7 +108,7 @@ Majority-vote predominance threshold for majority-accuracy: **τ = 0.10**.
 All metrics are computed **per query** at cutoff *k* and then averaged across queries. We report 95% confidence intervals via paired bootstrap.
 
 - **Hit@k:** 1 if at least one retrieved sentence is labeled with the gold law, else 0.
-- **MRR@k (unique documents):** reciprocal rank of the first occurrence of the gold law when the top-*k* list is collapsed to unique documents.
+- **MRR@k (unique laws):** reciprocal rank of the first occurrence of the gold law when the top-*k* list is collapsed to unique laws.
 - **Top-1 accuracy:** 1 if the top-ranked sentence law equals the gold law, else 0.
 - **Majority-accuracy:** 1 if the plurality law in top-*k* equals gold **and** its fraction ≥ τ; otherwise 0 (abstentions count as 0).
 - **Mean consensus fraction:** fraction of the top-*k* sentences that belong to the gold law.
@@ -118,149 +118,149 @@ All metrics are computed **per query** at cutoff *k* and then averaged across qu
 
 ### Micro-averaged quality (mean ± 95% CI)
 
-**MRR@k (unique documents)**
+**MRR@k (unique laws)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.683 [0.657, 0.709] | 0.622 [0.595, 0.649] | 0.519 [0.491, 0.547] |
-| 5 | 0.701 [0.676, 0.725] | 0.644 [0.618, 0.670] | 0.544 [0.517, 0.570] |
-| 10 | 0.714 [0.691, 0.737] | 0.665 [0.641, 0.690] | 0.569 [0.543, 0.595] |
-| 15 | 0.719 [0.697, 0.742] | 0.673 [0.649, 0.697] | 0.579 [0.554, 0.603] |
-| 20 | 0.722 [0.700, 0.744] | 0.678 [0.654, 0.701] | 0.584 [0.559, 0.609] |
+| 3 | 0.537 [0.510, 0.564] | 0.535 [0.507, 0.563] | 0.444 [0.416, 0.471] |
+| 5 | 0.559 [0.533, 0.585] | 0.561 [0.535, 0.588] | 0.470 [0.443, 0.497] |
+| 10 | 0.577 [0.552, 0.602] | 0.584 [0.559, 0.609] | 0.496 [0.470, 0.521] |
+| 15 | 0.585 [0.560, 0.609] | 0.594 [0.570, 0.619] | 0.509 [0.484, 0.534] |
+| 20 | 0.590 [0.566, 0.614] | 0.600 [0.576, 0.624] | 0.516 [0.491, 0.541] |
 
 **Hit@k**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.788 [0.762, 0.813] | 0.711 [0.683, 0.739] | 0.610 [0.579, 0.639] |
-| 5 | 0.844 [0.822, 0.867] | 0.766 [0.739, 0.792] | 0.680 [0.652, 0.710] |
-| 10 | 0.899 [0.880, 0.917] | 0.836 [0.812, 0.858] | 0.770 [0.743, 0.795] |
-| 15 | 0.930 [0.913, 0.945] | 0.865 [0.842, 0.886] | 0.812 [0.787, 0.836] |
-| 20 | 0.944 [0.930, 0.958] | 0.885 [0.865, 0.904] | 0.834 [0.811, 0.857] |
+| 3 | 0.659 [0.629, 0.688] | 0.628 [0.598, 0.658] | 0.529 [0.498, 0.559] |
+| 5 | 0.729 [0.700, 0.756] | 0.693 [0.664, 0.722] | 0.596 [0.565, 0.627] |
+| 10 | 0.808 [0.783, 0.832] | 0.770 [0.744, 0.796] | 0.686 [0.656, 0.715] |
+| 15 | 0.856 [0.834, 0.878] | 0.812 [0.788, 0.835] | 0.744 [0.718, 0.771] |
+| 20 | 0.894 [0.874, 0.913] | 0.836 [0.814, 0.859] | 0.776 [0.749, 0.801] |
 
 **Top-1 accuracy**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.594 [0.563, 0.625] | 0.542 [0.511, 0.572] | 0.437 [0.406, 0.468] |
-| 5 | 0.594 [0.565, 0.625] | 0.542 [0.512, 0.572] | 0.437 [0.406, 0.467] |
-| 10 | 0.594 [0.563, 0.625] | 0.542 [0.511, 0.573] | 0.437 [0.406, 0.468] |
-| 15 | 0.594 [0.563, 0.624] | 0.542 [0.510, 0.573] | 0.437 [0.406, 0.467] |
-| 20 | 0.594 [0.563, 0.624] | 0.542 [0.513, 0.573] | 0.437 [0.406, 0.468] |
+| 3 | 0.432 [0.401, 0.462] | 0.449 [0.418, 0.480] | 0.367 [0.338, 0.398] |
+| 5 | 0.432 [0.402, 0.463] | 0.449 [0.418, 0.481] | 0.367 [0.337, 0.398] |
+| 10 | 0.432 [0.402, 0.462] | 0.449 [0.418, 0.478] | 0.367 [0.337, 0.397] |
+| 15 | 0.432 [0.402, 0.463] | 0.449 [0.418, 0.480] | 0.367 [0.337, 0.397] |
+| 20 | 0.432 [0.402, 0.464] | 0.449 [0.418, 0.480] | 0.367 [0.337, 0.397] |
 
 **Majority-accuracy** (τ=0.10)
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.572 [0.541, 0.603] | 0.515 [0.483, 0.546] | 0.423 [0.393, 0.455] |
-| 5 | 0.525 [0.493, 0.555] | 0.474 [0.444, 0.505] | 0.400 [0.369, 0.431] |
-| 10 | 0.459 [0.427, 0.490] | 0.404 [0.373, 0.434] | 0.345 [0.315, 0.375] |
-| 15 | 0.402 [0.371, 0.432] | 0.319 [0.290, 0.348] | 0.287 [0.258, 0.315] |
-| 20 | 0.334 [0.306, 0.362] | 0.279 [0.250, 0.306] | 0.257 [0.229, 0.284] |
+| 3 | 0.421 [0.390, 0.451] | 0.427 [0.396, 0.457] | 0.338 [0.309, 0.367] |
+| 5 | 0.379 [0.349, 0.409] | 0.374 [0.345, 0.404] | 0.314 [0.286, 0.343] |
+| 10 | 0.322 [0.294, 0.351] | 0.309 [0.280, 0.338] | 0.266 [0.239, 0.293] |
+| 15 | 0.290 [0.262, 0.319] | 0.249 [0.223, 0.277] | 0.230 [0.203, 0.257] |
+| 20 | 0.260 [0.233, 0.287] | 0.222 [0.197, 0.247] | 0.201 [0.177, 0.225] |
 
 **Mean consensus fraction**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.478 [0.457, 0.499] | 0.460 [0.436, 0.483] | 0.381 [0.358, 0.405] |
-| 5 | 0.412 [0.394, 0.431] | 0.412 [0.391, 0.432] | 0.348 [0.327, 0.369] |
-| 10 | 0.325 [0.309, 0.341] | 0.331 [0.314, 0.349] | 0.285 [0.268, 0.303] |
-| 15 | 0.280 [0.265, 0.296] | 0.283 [0.267, 0.300] | 0.251 [0.234, 0.267] |
-| 20 | 0.249 [0.235, 0.263] | 0.253 [0.238, 0.269] | 0.226 [0.211, 0.242] |
+| 3 | 0.346 [0.326, 0.366] | 0.366 [0.343, 0.388] | 0.297 [0.276, 0.318] |
+| 5 | 0.292 [0.276, 0.308] | 0.333 [0.313, 0.352] | 0.275 [0.256, 0.295] |
+| 10 | 0.238 [0.225, 0.251] | 0.273 [0.257, 0.289] | 0.234 [0.218, 0.250] |
+| 15 | 0.209 [0.197, 0.222] | 0.238 [0.224, 0.253] | 0.208 [0.193, 0.222] |
+| 20 | 0.190 [0.178, 0.202] | 0.216 [0.201, 0.230] | 0.189 [0.176, 0.203] |
 
 **Mean lift (prior)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 33.651 [31.222, 36.130] | 28.729 [26.542, 31.005] | 21.407 [19.450, 23.394] |
-| 5 | 27.162 [25.445, 28.887] | 24.249 [22.480, 25.952] | 18.811 [17.346, 20.368] |
-| 10 | 18.567 [17.561, 19.593] | 17.498 [16.455, 18.528] | 13.941 [12.997, 14.860] |
-| 15 | 14.810 [14.086, 15.514] | 13.699 [12.954, 14.423] | 11.435 [10.761, 12.113] |
-| 20 | 12.293 [11.761, 12.845] | 11.396 [10.836, 11.950] | 9.741 [9.195, 10.268] |
+| 3 | 24.716 [22.496, 27.039] | 20.196 [18.444, 21.959] | 15.420 [13.771, 17.176] |
+| 5 | 19.299 [17.734, 20.886] | 17.268 [15.898, 18.732] | 13.311 [12.003, 14.667] |
+| 10 | 13.620 [12.679, 14.554] | 12.948 [12.051, 13.837] | 10.293 [9.471, 11.121] |
+| 15 | 11.262 [10.561, 11.948] | 10.391 [9.752, 11.040] | 8.780 [8.169, 9.424] |
+| 20 | 9.600 [9.062, 10.130] | 8.815 [8.303, 9.322] | 7.612 [7.126, 8.111] |
 
 ### Paired deltas (KAHM − IDF–SVD)
 
 | k | Δhit@k | ΔMRR@k | ΔTop-1 | ΔMajority-acc | ΔMean cons frac | ΔMean lift |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3 | -0.077 [-0.107, -0.047] | -0.062 [-0.091, -0.034] | -0.052 [-0.086, -0.019] | -0.057 [-0.090, -0.025] | -0.018 [-0.038, +0.002] | -4.922 [-7.179, -2.707] |
-| 5 | -0.078 [-0.104, -0.053] | -0.057 [-0.082, -0.031] | -0.052 [-0.085, -0.019] | -0.051 [-0.083, -0.019] | -0.000 [-0.017, +0.016] | -2.913 [-4.474, -1.308] |
-| 10 | -0.063 [-0.086, -0.041] | -0.049 [-0.073, -0.025] | -0.052 [-0.085, -0.019] | -0.055 [-0.084, -0.026] | +0.006 [-0.005, +0.017] | -1.069 [-1.918, -0.190] |
-| 15 | -0.065 [-0.086, -0.045] | -0.046 [-0.070, -0.024] | -0.052 [-0.085, -0.019] | -0.083 [-0.109, -0.056] | +0.003 [-0.007, +0.012] | -1.111 [-1.702, -0.525] |
-| 20 | -0.059 [-0.079, -0.040] | -0.044 [-0.067, -0.022] | -0.052 [-0.085, -0.019] | -0.055 [-0.080, -0.032] | +0.004 [-0.004, +0.013] | -0.897 [-1.344, -0.459] |
+| 3 | -0.031 [-0.064, +0.002] | -0.002 [-0.031, +0.028] | +0.017 [-0.017, +0.050] | +0.006 [-0.029, +0.040] | +0.020 [-0.001, +0.040] | -4.520 [-6.343, -2.762] |
+| 5 | -0.036 [-0.067, -0.006] | +0.003 [-0.024, +0.030] | +0.017 [-0.017, +0.050] | -0.005 [-0.038, +0.028] | +0.041 [+0.025, +0.057] | -2.031 [-3.433, -0.659] |
+| 10 | -0.038 [-0.066, -0.010] | +0.007 [-0.018, +0.032] | +0.017 [-0.016, +0.050] | -0.013 [-0.043, +0.018] | +0.035 [+0.023, +0.047] | -0.672 [-1.489, +0.147] |
+| 15 | -0.044 [-0.070, -0.018] | +0.010 [-0.014, +0.035] | +0.017 [-0.016, +0.050] | -0.041 [-0.067, -0.015] | +0.029 [+0.019, +0.038] | -0.871 [-1.499, -0.282] |
+| 20 | -0.058 [-0.082, -0.033] | +0.010 [-0.015, +0.035] | +0.017 [-0.017, +0.051] | -0.038 [-0.063, -0.013] | +0.026 [+0.017, +0.034] | -0.786 [-1.241, -0.326] |
 
 ### Paired deltas vs transformer-query baseline (context; KAHM − Mixedbread)
 
 | k | Δhit@k | ΔMRR@k | ΔTop-1 | ΔMajority-acc | ΔMean cons frac | ΔMean lift |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3 | +0.101 [+0.074, +0.129] | +0.102 [+0.079, +0.126] | +0.105 [+0.077, +0.133] | +0.092 [+0.065, +0.119] | +0.079 [+0.061, +0.096] | +7.321 [+5.257, +9.258] |
-| 5 | +0.086 [+0.060, +0.112] | +0.100 [+0.078, +0.121] | +0.105 [+0.076, +0.132] | +0.074 [+0.048, +0.101] | +0.064 [+0.051, +0.077] | +5.438 [+4.083, +6.842] |
-| 10 | +0.066 [+0.044, +0.088] | +0.096 [+0.076, +0.115] | +0.105 [+0.077, +0.133] | +0.059 [+0.036, +0.084] | +0.046 [+0.037, +0.055] | +3.556 [+2.853, +4.282] |
-| 15 | +0.053 [+0.033, +0.074] | +0.094 [+0.076, +0.113] | +0.105 [+0.077, +0.133] | +0.032 [+0.012, +0.053] | +0.033 [+0.026, +0.040] | +2.264 [+1.792, +2.731] |
-| 20 | +0.051 [+0.031, +0.071] | +0.094 [+0.075, +0.112] | +0.105 [+0.077, +0.133] | +0.022 [+0.004, +0.041] | +0.027 [+0.021, +0.033] | +1.655 [+1.294, +2.031] |
+| 3 | +0.099 [+0.073, +0.124] | +0.092 [+0.070, +0.114] | +0.082 [+0.055, +0.109] | +0.089 [+0.063, +0.116] | +0.068 [+0.054, +0.083] | +4.776 [+3.218, +6.346] |
+| 5 | +0.097 [+0.074, +0.122] | +0.091 [+0.072, +0.112] | +0.082 [+0.057, +0.108] | +0.060 [+0.033, +0.086] | +0.058 [+0.046, +0.070] | +3.957 [+2.872, +5.040] |
+| 10 | +0.084 [+0.061, +0.107] | +0.089 [+0.070, +0.107] | +0.082 [+0.056, +0.108] | +0.043 [+0.021, +0.066] | +0.039 [+0.031, +0.046] | +2.655 [+2.018, +3.308] |
+| 15 | +0.068 [+0.045, +0.091] | +0.085 [+0.066, +0.103] | +0.082 [+0.056, +0.107] | +0.019 [+0.001, +0.037] | +0.031 [+0.025, +0.036] | +1.611 [+1.163, +2.034] |
+| 20 | +0.060 [+0.037, +0.083] | +0.084 [+0.066, +0.103] | +0.082 [+0.056, +0.108] | +0.021 [+0.004, +0.038] | +0.027 [+0.022, +0.031] | +1.203 [+0.860, +1.550] |
 
 ### Macro-averaged quality (per-law average; robustness)
 
 Macro-averaging computes metrics per law and then averages across laws (each law has equal weight). This is a robustness check against label-frequency skew.
 
-**Macro MRR@k (unique documents)**
+**Macro MRR@k (unique laws)**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.659 [0.576, 0.739] | 0.588 [0.489, 0.682] | 0.484 [0.394, 0.576] |
-| 5 | 0.677 [0.592, 0.752] | 0.612 [0.515, 0.701] | 0.510 [0.421, 0.598] |
-| 10 | 0.691 [0.615, 0.763] | 0.635 [0.544, 0.723] | 0.536 [0.451, 0.618] |
-| 15 | 0.697 [0.623, 0.766] | 0.644 [0.554, 0.726] | 0.547 [0.463, 0.631] |
-| 20 | 0.700 [0.626, 0.771] | 0.649 [0.565, 0.732] | 0.553 [0.474, 0.633] |
+| 3 | 0.512 [0.430, 0.591] | 0.489 [0.390, 0.586] | 0.395 [0.306, 0.488] |
+| 5 | 0.533 [0.450, 0.612] | 0.515 [0.420, 0.607] | 0.421 [0.334, 0.511] |
+| 10 | 0.552 [0.469, 0.626] | 0.540 [0.449, 0.631] | 0.448 [0.362, 0.532] |
+| 15 | 0.560 [0.483, 0.631] | 0.551 [0.458, 0.640] | 0.463 [0.380, 0.549] |
+| 20 | 0.566 [0.490, 0.641] | 0.558 [0.471, 0.646] | 0.471 [0.392, 0.552] |
 
 **Macro Hit@k**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.766 [0.678, 0.839] | 0.680 [0.583, 0.769] | 0.574 [0.478, 0.669] |
-| 5 | 0.825 [0.744, 0.891] | 0.738 [0.646, 0.819] | 0.646 [0.552, 0.731] |
-| 10 | 0.883 [0.814, 0.939] | 0.814 [0.733, 0.886] | 0.742 [0.660, 0.819] |
-| 15 | 0.918 [0.862, 0.962] | 0.846 [0.774, 0.910] | 0.789 [0.712, 0.860] |
-| 20 | 0.935 [0.891, 0.971] | 0.869 [0.808, 0.923] | 0.813 [0.739, 0.880] |
+| 3 | 0.634 [0.547, 0.713] | 0.581 [0.478, 0.676] | 0.476 [0.379, 0.578] |
+| 5 | 0.704 [0.612, 0.784] | 0.647 [0.544, 0.741] | 0.543 [0.440, 0.640] |
+| 10 | 0.783 [0.705, 0.850] | 0.733 [0.639, 0.817] | 0.640 [0.551, 0.726] |
+| 15 | 0.836 [0.771, 0.892] | 0.778 [0.690, 0.855] | 0.704 [0.618, 0.787] |
+| 20 | 0.877 [0.817, 0.927] | 0.805 [0.721, 0.880] | 0.740 [0.659, 0.815] |
 
 **Macro Top-1 accuracy**
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.568 [0.474, 0.657] | 0.507 [0.398, 0.609] | 0.403 [0.313, 0.496] |
-| 5 | 0.568 [0.473, 0.654] | 0.507 [0.398, 0.614] | 0.403 [0.313, 0.494] |
-| 10 | 0.568 [0.473, 0.659] | 0.507 [0.399, 0.607] | 0.403 [0.316, 0.495] |
-| 15 | 0.568 [0.475, 0.659] | 0.507 [0.402, 0.610] | 0.403 [0.310, 0.495] |
-| 20 | 0.568 [0.477, 0.656] | 0.507 [0.396, 0.613] | 0.403 [0.314, 0.492] |
+| 3 | 0.406 [0.320, 0.490] | 0.403 [0.301, 0.501] | 0.321 [0.235, 0.410] |
+| 5 | 0.406 [0.324, 0.490] | 0.403 [0.301, 0.503] | 0.321 [0.237, 0.413] |
+| 10 | 0.406 [0.323, 0.490] | 0.403 [0.301, 0.500] | 0.321 [0.236, 0.412] |
+| 15 | 0.406 [0.319, 0.488] | 0.403 [0.303, 0.501] | 0.321 [0.235, 0.410] |
+| 20 | 0.406 [0.324, 0.490] | 0.403 [0.301, 0.503] | 0.321 [0.237, 0.409] |
 
 **Macro Majority-accuracy** (τ=0.10)
 
 | k | IDF–SVD | KAHM(query→MB corpus) | Mixedbread (true) |
 | --- | --- | --- | --- |
-| 3 | 0.541 [0.444, 0.636] | 0.474 [0.365, 0.583] | 0.382 [0.282, 0.485] |
-| 5 | 0.490 [0.385, 0.590] | 0.430 [0.314, 0.548] | 0.357 [0.254, 0.464] |
-| 10 | 0.416 [0.304, 0.532] | 0.355 [0.230, 0.480] | 0.298 [0.193, 0.410] |
-| 15 | 0.355 [0.240, 0.477] | 0.271 [0.157, 0.393] | 0.240 [0.135, 0.356] |
-| 20 | 0.285 [0.173, 0.408] | 0.228 [0.116, 0.357] | 0.210 [0.107, 0.329] |
+| 3 | 0.390 [0.312, 0.468] | 0.374 [0.271, 0.476] | 0.292 [0.210, 0.378] |
+| 5 | 0.344 [0.261, 0.429] | 0.319 [0.222, 0.425] | 0.265 [0.184, 0.351] |
+| 10 | 0.283 [0.197, 0.377] | 0.251 [0.152, 0.354] | 0.211 [0.124, 0.306] |
+| 15 | 0.243 [0.154, 0.346] | 0.191 [0.101, 0.294] | 0.175 [0.089, 0.275] |
+| 20 | 0.211 [0.121, 0.313] | 0.163 [0.070, 0.272] | 0.148 [0.066, 0.247] |
 
 ### Macro paired deltas (KAHM − IDF–SVD)
 
 | k | Δhit@k | ΔMRR@k | ΔTop-1 | ΔMajority-acc | ΔMean cons frac | ΔMean lift |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3 | -0.086 [-0.141, -0.032] | -0.071 [-0.126, -0.017] | -0.061 [-0.127, +0.003] | -0.067 [-0.130, -0.007] | -0.026 [-0.067, +0.017] | -5.792 [-11.189, -0.981] |
-| 5 | -0.087 [-0.142, -0.037] | -0.066 [-0.118, -0.015] | -0.061 [-0.125, +0.002] | -0.060 [-0.128, +0.011] | -0.007 [-0.041, +0.028] | -3.562 [-7.669, +0.099] |
-| 10 | -0.069 [-0.108, -0.033] | -0.056 [-0.105, -0.008] | -0.061 [-0.125, -0.000] | -0.061 [-0.121, -0.007] | +0.002 [-0.024, +0.028] | -1.340 [-3.354, +0.700] |
-| 15 | -0.072 [-0.105, -0.040] | -0.054 [-0.100, -0.006] | -0.061 [-0.126, +0.002] | -0.084 [-0.145, -0.027] | -0.000 [-0.024, +0.022] | -1.346 [-2.728, -0.005] |
-| 20 | -0.066 [-0.098, -0.035] | -0.052 [-0.100, -0.005] | -0.061 [-0.126, +0.002] | -0.057 [-0.105, -0.007] | +0.001 [-0.021, +0.023] | -1.093 [-2.159, -0.045] |
+| 3 | -0.054 [-0.117, +0.011] | -0.023 [-0.085, +0.040] | -0.003 [-0.077, +0.073] | -0.016 [-0.081, +0.048] | -0.000 [-0.046, +0.048] | -6.238 [-11.722, -1.400] |
+| 5 | -0.057 [-0.122, +0.008] | -0.018 [-0.080, +0.045] | -0.003 [-0.077, +0.068] | -0.025 [-0.086, +0.037] | +0.022 [-0.016, +0.062] | -3.218 [-7.494, +0.563] |
+| 10 | -0.050 [-0.107, +0.003] | -0.011 [-0.069, +0.047] | -0.003 [-0.076, +0.065] | -0.032 [-0.095, +0.035] | +0.021 [-0.010, +0.053] | -1.215 [-3.737, +0.991] |
+| 15 | -0.058 [-0.121, -0.002] | -0.009 [-0.063, +0.051] | -0.003 [-0.075, +0.068] | -0.052 [-0.108, +0.005] | +0.016 [-0.009, +0.044] | -1.401 [-3.251, +0.236] |
+| 20 | -0.071 [-0.137, -0.012] | -0.008 [-0.066, +0.048] | -0.003 [-0.074, +0.067] | -0.048 [-0.100, +0.010] | +0.014 [-0.008, +0.040] | -1.235 [-2.870, +0.089] |
 
 ### Macro paired deltas vs transformer-query baseline (context; KAHM − Mixedbread)
 
 | k | Δhit@k | ΔMRR@k | ΔTop-1 | ΔMajority-acc | ΔMean cons frac | ΔMean lift |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3 | +0.106 [+0.061, +0.152] | +0.104 [+0.067, +0.139] | +0.104 [+0.063, +0.145] | +0.092 [+0.060, +0.126] | +0.078 [+0.051, +0.105] | +8.157 [+4.656, +11.842] |
-| 5 | +0.092 [+0.051, +0.131] | +0.102 [+0.070, +0.135] | +0.104 [+0.063, +0.146] | +0.073 [+0.035, +0.114] | +0.064 [+0.041, +0.087] | +5.942 [+3.157, +8.751] |
-| 10 | +0.072 [+0.049, +0.098] | +0.098 [+0.070, +0.126] | +0.104 [+0.062, +0.146] | +0.056 [+0.019, +0.098] | +0.045 [+0.032, +0.058] | +3.881 [+2.565, +5.308] |
-| 15 | +0.058 [+0.033, +0.085] | +0.096 [+0.070, +0.123] | +0.104 [+0.063, +0.145] | +0.031 [+0.007, +0.059] | +0.031 [+0.022, +0.040] | +2.452 [+1.731, +3.199] |
-| 20 | +0.055 [+0.030, +0.082] | +0.096 [+0.069, +0.122] | +0.104 [+0.064, +0.146] | +0.019 [-0.003, +0.044] | +0.025 [+0.017, +0.034] | +1.776 [+1.303, +2.228] |
+| 3 | +0.104 [+0.059, +0.156] | +0.094 [+0.054, +0.137] | +0.081 [+0.043, +0.123] | +0.082 [+0.045, +0.122] | +0.065 [+0.039, +0.092] | +5.341 [+1.489, +9.503] |
+| 5 | +0.104 [+0.069, +0.143] | +0.094 [+0.062, +0.132] | +0.081 [+0.043, +0.123] | +0.054 [+0.022, +0.089] | +0.054 [+0.037, +0.073] | +4.370 [+2.238, +6.760] |
+| 10 | +0.093 [+0.057, +0.136] | +0.092 [+0.060, +0.129] | +0.081 [+0.044, +0.123] | +0.040 [+0.006, +0.076] | +0.036 [+0.023, +0.049] | +2.979 [+1.680, +4.453] |
+| 15 | +0.074 [+0.039, +0.113] | +0.088 [+0.055, +0.125] | +0.081 [+0.043, +0.122] | +0.016 [-0.008, +0.045] | +0.027 [+0.017, +0.037] | +1.732 [+0.789, +2.714] |
+| 20 | +0.065 [+0.030, +0.100] | +0.087 [+0.055, +0.122] | +0.081 [+0.043, +0.122] | +0.015 [-0.008, +0.040] | +0.023 [+0.015, +0.031] | +1.268 [+0.586, +1.965] |
 
 ## Majority-vote routing (coverage/precision)
 
@@ -270,9 +270,9 @@ Recommended τ′ maximizes precision subject to coverage ≥ **0.50**.
 
 | Method | τ′ | Coverage | Majority-acc | Precision (acc|covered) |
 | --- | --- | --- | --- | --- |
-| IDF–SVD | 0.31 | 0.696 | 0.358 | 0.514 |
-| Mixedbread (true) | 0.41 | 0.701 | 0.247 | 0.352 |
-| KAHM(query→MB corpus) | 0.51 | 0.516 | 0.217 | 0.421 |
+| IDF–SVD | 0.31 | 0.666 | 0.229 | 0.344 |
+| Mixedbread (true) | 0.51 | 0.502 | 0.141 | 0.281 |
+| KAHM(query→MB corpus) | 0.41 | 0.721 | 0.225 | 0.312 |
 
 ## Computational profile
 
@@ -282,29 +282,29 @@ This section reports query-time computational profiles for the three retrieval p
 
 | Path | Query source | Query embed / q | FAISS search / q | Total online / q | Observed step sum / q | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| IDF–SVD | model | 7.908 ms | 0.013 ms | 7.921 ms | 7.921 ms | IDF–SVD model load shown in component table (cold-start). |
-| KAHM(query→MB corpus) | model | 56.112 ms | 0.004 ms | 56.116 ms | 56.116 ms | Online total only available when KAHM queries were embedded in this run (not precomputed NPZ). |
-| Mixedbread (true) | online | 842.486 ms | 0.004 ms | 842.490 ms | 842.490 ms | Online total only available when Mixedbread queries were encoded on the fly (not precomputed NPZ). |
+| IDF–SVD | model | 9.249 ms | 0.012 ms | 9.261 ms | 9.261 ms | IDF–SVD model load shown in component table (cold-start). |
+| KAHM(query→MB corpus) | model | 40.468 ms | 0.006 ms | 40.474 ms | 40.474 ms | Online total only available when KAHM queries were embedded in this run (not precomputed NPZ). |
+| Mixedbread (true) | online | 623.526 ms | 0.004 ms | 623.530 ms | 623.530 ms | Online total only available when Mixedbread queries were encoded on the fly (not precomputed NPZ). |
 
 ### Measured components (wall-clock)
 
 | Component | Wall time | Per query | Notes |
 | --- | --- | --- | --- |
-| IDF–SVD query pipeline init (cold-start) | 3.817 s | 3.817 ms | One-time pipeline/materialization cost. |
-| IDF–SVD query embedding (batch) | 7.908 s | 7.908 ms |  |
+| IDF–SVD query pipeline init (cold-start) | 4.731 s | 4.731 ms | One-time pipeline/materialization cost. |
+| IDF–SVD query embedding (batch) | 9.249 s | 9.249 ms |  |
 | KAHM query load (precomputed NPZ) | n/a | n/a | Only present when --kahm_query_embeddings_npz is used. |
-| KAHM query model init (cold-start) | 3.706 s | 3.706 ms | Only present for online KAHM embedding. |
-| KAHM query warm-up (excluded from online total) | 2.985 s | n/a |  |
-| KAHM query embedding (batch) | 56.112 s | 56.112 ms |  |
+| KAHM query model init (cold-start) | 4.551 s | 4.551 ms | Only present for online KAHM embedding. |
+| KAHM query warm-up (excluded from online total) | 3.104 s | n/a |  |
+| KAHM query embedding (batch) | 40.468 s | 40.468 ms |  |
 | Mixedbread query load (precomputed NPZ) | n/a | n/a | Only present when precomputed Mixedbread query embeddings are used. |
-| Mixedbread model init (cold-start) | 4.426 s | 4.426 ms | Only present for online transformer query encoding. |
-| Mixedbread query warm-up (excluded from online total) | 0.698 s | n/a |  |
-| Mixedbread query embedding (batch) | 842.486 s | 842.486 ms |  |
-| FAISS build (IDF corpus index) | 0.348 s | n/a |  |
-| FAISS search (IDF path) | 0.013 s | 0.013 ms |  |
+| Mixedbread model init (cold-start) | 4.236 s | 4.236 ms | Only present for online transformer query encoding. |
+| Mixedbread query warm-up (excluded from online total) | 0.592 s | n/a |  |
+| Mixedbread query embedding (batch) | 623.526 s | 623.526 ms |  |
+| FAISS build (IDF corpus index) | 0.115 s | n/a |  |
+| FAISS search (IDF path) | 0.012 s | 0.012 ms |  |
 | FAISS build (MB corpus index) | 0.001 s | n/a | Shared by Mixedbread and KAHM(query→MB) paths. |
 | FAISS search (Mixedbread path) | 0.004 s | 0.004 ms |  |
-| FAISS search (KAHM→MB path) | 0.004 s | 0.004 ms |  |
+| FAISS search (KAHM→MB path) | 0.006 s | 0.006 ms |  |
 | Corpus embedding memory (IDF matrix) | 1,083,392 bytes | n/a | NumPy array nbytes (aligned corpus embeddings used in this run). |
 | Corpus embedding memory (MB matrix) | 2,166,784 bytes | n/a | NumPy array nbytes (aligned corpus embeddings used in this run). |
 
@@ -312,9 +312,9 @@ This section reports query-time computational profiles for the three retrieval p
 
 | Comparison | Speedup | Definition |
 | --- | --- | --- |
-| IDF–SVD vs KAHM(query→MB corpus) | 0.14× | IDF online / KAHM online |
-| Mixedbread (true) vs KAHM(query→MB corpus) | 15.01× | MB online / KAHM online |
-| Mixedbread (true) vs IDF–SVD | 106.37× | MB online / IDF online |
+| IDF–SVD vs KAHM(query→MB corpus) | 0.23× | IDF online / KAHM online |
+| Mixedbread (true) vs KAHM(query→MB corpus) | 15.41× | MB online / KAHM online |
+| Mixedbread (true) vs IDF–SVD | 67.33× | MB online / IDF online |
 
 ### Machine profile (auto-detected; best effort)
 
@@ -370,8 +370,8 @@ This section reports query-time computational profiles for the three retrieval p
 | idf_svd_npz | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\embedding_index_idf_svd.npz | yes | 1015735 |
 | idf_svd_model | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\idf_svd_model.joblib | yes | 158043209 |
 | kahm_query_model | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\kahm_query_regressors_by_law | yes | 0 |
-| mb_query_npz_test | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\queries_embedding_index_test.npz | yes | 1987130 |
-| mb_query_npz_train | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\queries_embedding_index_train.npz | yes | 7920014 |
+| mb_query_npz_test | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\queries_embedding_index_test.npz | yes | 1973812 |
+| mb_query_npz_train | C:\Users\marxp\Documents\Repositories\KAHM-Triathlon\queries_embedding_index_train.npz | yes | 7895910 |
 
 ## Notes and limitations
 
