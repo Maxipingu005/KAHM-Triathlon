@@ -123,7 +123,7 @@ function plotQualityFigure(mrrTbl, hitTbl, top1Tbl, outDir)
     ax1 = nexttile(tl, 1); hold(ax1, 'on');
     plotMetricWithCI(ax1, mrrTbl, 'MRR@k (unique docs.)');
     xlabel(ax1, 'Retrieval cutoff k','FontSize',18); ylabel(ax1, 'MRR@k (unique docs.)','FontSize',18);
-    title(ax1, 'Document-level ranking quality','FontSize',18); grid(ax1, 'on'); box(ax1, 'on');
+    title(ax1, 'Doc.-level ranking quality','FontSize',18); grid(ax1, 'on'); box(ax1, 'on');
 
     ax2 = nexttile(tl, 2); hold(ax2, 'on');
     plotMetricWithCI(ax2, hitTbl, 'Hit@k');
